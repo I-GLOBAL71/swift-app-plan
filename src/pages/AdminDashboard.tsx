@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductsManagement } from "@/components/admin/ProductsManagement";
 import { OrdersManagement } from "@/components/admin/OrdersManagement";
 import { DashboardStats } from "@/components/admin/DashboardStats";
-import { ApiSettings } from "@/components/admin/ApiSettings";
+import { SettingsManagement } from "@/components/admin/SettingsManagement";
 import { LogOut, Package, ShoppingCart, BarChart3, Settings } from "lucide-react";
 import { toast } from "sonner";
 
@@ -116,7 +116,7 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="settings">
-            <ApiSettings />
+            <SettingsManagement />
           </TabsContent>
         </Tabs>
       </main>
