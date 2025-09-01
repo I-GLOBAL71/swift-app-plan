@@ -47,8 +47,6 @@ export function ApiSettings() {
           key: "gemini_api_key",
           value: geminiApiKey,
           description: "Clé API Google Gemini pour l'IA générative"
-        }, {
-          onConflict: 'key'
         });
 
       if (error) throw error;
