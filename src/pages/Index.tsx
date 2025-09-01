@@ -1,6 +1,6 @@
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
-import ProductGrid from "@/components/ProductGrid";
+import DynamicSections from "@/components/DynamicSections";
 import Footer from "@/components/Footer";
 
 const Index = () => {
@@ -9,7 +9,7 @@ const Index = () => {
       <Header />
       <main>
         <HeroSection />
-        <ProductGrid />
+        <DynamicSections />
       </main>
       <Footer />
     </div>

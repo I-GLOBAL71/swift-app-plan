@@ -8,7 +8,8 @@ import { ProductsManagement } from "@/components/admin/ProductsManagement";
 import { OrdersManagement } from "@/components/admin/OrdersManagement";
 import { DashboardStats } from "@/components/admin/DashboardStats";
 import { SettingsManagement } from "@/components/admin/SettingsManagement";
-import { LogOut, Package, ShoppingCart, BarChart3, Settings } from "lucide-react";
+import SectionsManagement from "@/components/admin/SectionsManagement";
+import { LogOut, Package, ShoppingCart, BarChart3, Settings, Layout } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminDashboard() {
@@ -84,10 +85,14 @@ export default function AdminDashboard() {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Tableau de Bord
+            </TabsTrigger>
+            <TabsTrigger value="sections" className="flex items-center gap-2">
+              <Layout className="h-4 w-4" />
+              Sections
             </TabsTrigger>
             <TabsTrigger value="products" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
@@ -105,6 +110,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="dashboard">
             <DashboardStats />
+          </TabsContent>
+
+          <TabsContent value="sections">
+            <SectionsManagement />
           </TabsContent>
 
           <TabsContent value="products">

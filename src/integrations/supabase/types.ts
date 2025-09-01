@@ -158,6 +158,54 @@ export type Database = {
         }
         Relationships: []
       }
+      sections: {
+        Row: {
+          background_color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          max_products: number | null
+          position: number
+          show_premium_only: boolean | null
+          show_standard_only: boolean | null
+          style_type: string
+          text_color: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          background_color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_products?: number | null
+          position?: number
+          show_premium_only?: boolean | null
+          show_standard_only?: boolean | null
+          style_type?: string
+          text_color?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          background_color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_products?: number | null
+          position?: number
+          show_premium_only?: boolean | null
+          show_standard_only?: boolean | null
+          style_type?: string
+          text_color?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           created_at: string
