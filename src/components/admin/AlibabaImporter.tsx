@@ -17,6 +17,11 @@ interface ScrapedProduct {
   variants?: any[];
 }
 
+interface ProductImage {
+  url: string;
+  selected: boolean;
+}
+
 interface RewrittenContent {
   title?: string;
   description?: string;
@@ -27,6 +32,7 @@ interface RewrittenContent {
 export function AlibabaImporter() {
   const [url, setUrl] = useState("");
   const [scrapedProduct, setScrapedProduct] = useState<ScrapedProduct | null>(null);
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [rewrittenContent, setRewrittenContent] = useState<RewrittenContent>({});
   const [loading, setLoading] = useState(false);
   const [rewriting, setRewriting] = useState<string | null>(null);
@@ -47,6 +53,7 @@ export function AlibabaImporter() {
 
       if (data.success) {
         setScrapedProduct(data.product);
+        setProductImages(data.product.images.map((img: string) => ({ url: img, selected: true })));
         toast.success("Produit importé avec succès");
       } else {
         throw new Error(data.error || "Erreur lors de l'importation");
@@ -103,11 +110,12 @@ export function AlibabaImporter() {
       const priceMatch = scrapedProduct.price.match(/[\d,]+/);
       const price = priceMatch ? parseInt(priceMatch[0].replace(/,/g, '')) * 500 : 3000; // Estimation FCFA
 
+      const selectedImages = productImages.filter(img => img.selected);
       const productData = {
         title: rewrittenContent.title || scrapedProduct.title,
         description: rewrittenContent.description || scrapedProduct.description,
         price,
-        image_url: scrapedProduct.images[0] || null,
+        image_url: selectedImages[0]?.url || null,
         keywords: rewrittenContent.keywords ? rewrittenContent.keywords.split(',').map(k => k.trim()) : [],
         synonyms: rewrittenContent.synonyms ? rewrittenContent.synonyms.split(',').map(s => s.trim()) : [],
         is_active: true,
@@ -122,6 +130,7 @@ export function AlibabaImporter() {
 
       toast.success("Produit publié avec succès");
       setScrapedProduct(null);
+      setProductImages([]);
       setRewrittenContent({});
       setUrl("");
     } catch (error) {
@@ -177,19 +186,45 @@ export function AlibabaImporter() {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Images */}
-            {scrapedProduct.images.length > 0 && (
+            {productImages.length > 0 && (
               <div>
-                <Label>Images</Label>
-                <div className="flex gap-2 mt-2">
-                  {scrapedProduct.images.slice(0, 5).map((img, index) => (
-                    <img
-                      key={index}
-                      src={img}
-                      alt={`Image ${index + 1}`}
-                      className="w-20 h-20 object-cover rounded border"
-                    />
+                <Label>Images ({productImages.filter(img => img.selected).length} sélectionnées)</Label>
+                <div className="grid grid-cols-4 gap-3 mt-2 max-h-80 overflow-y-auto">
+                  {productImages.map((img, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={img.url}
+                        alt={`Image ${index + 1}`}
+                        className={`w-full h-20 object-cover rounded border-2 cursor-pointer transition-all ${
+                          img.selected 
+                            ? 'border-primary shadow-md' 
+                            : 'border-gray-200 opacity-50'
+                        }`}
+                        onClick={() => {
+                          setProductImages(prev => 
+                            prev.map((image, i) => 
+                              i === index ? { ...image, selected: !image.selected } : image
+                            )
+                          );
+                        }}
+                      />
+                      <div className="absolute top-1 right-1">
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                          img.selected 
+                            ? 'bg-primary border-primary' 
+                            : 'bg-white border-gray-300'
+                        }`}>
+                          {img.selected && (
+                            <div className="w-2 h-2 bg-white rounded-full"></div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Cliquez sur les images pour les sélectionner/désélectionner
+                </p>
               </div>
             )}
 

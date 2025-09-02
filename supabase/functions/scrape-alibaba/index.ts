@@ -135,8 +135,23 @@ function extractDescription(html: string): string {
 }
 
 function extractImages(html: string): string[] {
-  const imageMatches = html.match(/https:\/\/[^"'\s]+\.(jpg|jpeg|png|webp)/gi) || []
-  return [...new Set(imageMatches)].slice(0, 10) // Limite à 10 images uniques
+  // Extraction des images principales du produit
+  const mainImageMatches = html.match(/(?:data-src|src)="([^"]*\.(?:jpg|jpeg|png|webp)[^"]*)"/gi) || []
+  const mainImages = mainImageMatches.map(match => {
+    const url = match.match(/(?:data-src|src)="([^"]*)"/)?.[1]
+    return url?.startsWith('//') ? `https:${url}` : url
+  }).filter(Boolean)
+
+  // Extraction des images de description et de galerie
+  const galleryImageMatches = html.match(/https:\/\/[^"'\s,]+\.(jpg|jpeg|png|webp)(?:\?[^"'\s]*)?/gi) || []
+  
+  // Filtrer les images de petite taille et les doublons
+  const allImages = [...mainImages, ...galleryImageMatches]
+  const uniqueImages = [...new Set(allImages)]
+    .filter(img => img && !img.includes('_50x50') && !img.includes('_60x60') && !img.includes('_100x100'))
+    .slice(0, 20) // Limite à 20 images uniques
+  
+  return uniqueImages
 }
 
 function extractPrice(html: string): string {
