@@ -55,10 +55,7 @@ const DynamicSections = () => {
       if (productsResult.error) throw productsResult.error;
 
       setSections(sectionsResult.data || []);
-      setProducts((productsResult.data || []).map(product => ({
-        ...product,
-        image_url: product.image_url as string | string[] | null
-      })));
+      setProducts(productsResult.data as Product[] || []);
     } catch (error) {
       console.error("Error loading data:", error);
       toast.error("Erreur lors du chargement des sections");

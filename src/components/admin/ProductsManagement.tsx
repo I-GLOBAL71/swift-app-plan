@@ -41,10 +41,7 @@ export function ProductsManagement() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setProducts((data || []).map(product => ({
-        ...product,
-        image_url: product.image_url as string | string[] | null
-      })));
+      setProducts(data as Product[] || []);
     } catch (error) {
       console.error("Erreur lors du chargement des produits:", error);
       toast.error("Erreur lors du chargement des produits");

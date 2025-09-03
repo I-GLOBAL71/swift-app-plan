@@ -228,7 +228,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
             <div>
               <Label>Aperçu de l'image</Label>
               <img
-                src={formData.image_url}
+                src={Array.isArray(formData.image_url) ? formData.image_url[0] : formData.image_url}
                 alt="Aperçu"
                 className="w-32 h-32 object-cover rounded mt-2"
                 onError={(e) => {
