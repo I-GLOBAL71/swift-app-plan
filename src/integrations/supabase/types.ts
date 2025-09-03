@@ -121,7 +121,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
-          image_url: string | null
+          image_url: Json | null
           is_active: boolean | null
           is_premium: boolean | null
           keywords: string[] | null
@@ -134,7 +134,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
-          image_url?: string | null
+          image_url?: Json | null
           is_active?: boolean | null
           is_premium?: boolean | null
           keywords?: string[] | null
@@ -147,7 +147,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
-          image_url?: string | null
+          image_url?: Json | null
           is_active?: boolean | null
           is_premium?: boolean | null
           keywords?: string[] | null

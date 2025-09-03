@@ -115,7 +115,7 @@ export function AlibabaImporter() {
         title: rewrittenContent.title || scrapedProduct.title,
         description: rewrittenContent.description || scrapedProduct.description,
         price,
-        image_url: selectedImages[0]?.url || null,
+        image_url: selectedImages.length > 0 ? selectedImages.map(img => img.url) : null,
         keywords: rewrittenContent.keywords ? rewrittenContent.keywords.split(',').map(k => k.trim()) : [],
         synonyms: rewrittenContent.synonyms ? rewrittenContent.synonyms.split(',').map(s => s.trim()) : [],
         is_active: true,

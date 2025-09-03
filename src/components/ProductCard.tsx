@@ -5,7 +5,7 @@ import productSample from "@/assets/product-sample.jpg";
 
 interface ProductCardProps {
   title: string;
-  image?: string;
+  image?: string | string[];
   isPremium?: boolean;
   price?: number;
 }
@@ -16,11 +16,13 @@ const ProductCard = ({
   isPremium = false, 
   price = 3000 
 }: ProductCardProps) => {
+  const displayImage = Array.isArray(image) ? image[0] : image || productSample;
+  
   return (
     <Card className="group hover:shadow-card transition-all duration-300 hover:-translate-y-1 overflow-hidden border-0 shadow-sm">
       <div className="relative overflow-hidden">
         <img 
-          src={image} 
+          src={displayImage} 
           alt={title}
           className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500"
         />
