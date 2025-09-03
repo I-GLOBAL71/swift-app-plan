@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Download, Sparkles, Save, RefreshCw } from "lucide-react";
+import { Download, Sparkles, Save, RefreshCw, ArrowLeft } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface ScrapedProduct {
   title: string;
@@ -15,6 +16,16 @@ interface ScrapedProduct {
   images: string[];
   price: string;
   variants?: any[];
+}
+
+interface ProductFormData {
+  title: string;
+  description: string;
+  price: number;
+  premiumPrice?: number;
+  isPremium: boolean;
+  variants: string[];
+  selectedImages: string[];
 }
 
 interface ProductImage {
@@ -36,6 +47,15 @@ export function AlibabaImporter() {
   const [rewrittenContent, setRewrittenContent] = useState<RewrittenContent>({});
   const [loading, setLoading] = useState(false);
   const [rewriting, setRewriting] = useState<string | null>(null);
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [productFormData, setProductFormData] = useState<ProductFormData>({
+    title: "",
+    description: "",
+    price: 3000,
+    isPremium: false,
+    variants: [],
+    selectedImages: []
+  });
 
   const handleScrape = async () => {
     if (!url.includes('alibaba.com')) {
@@ -102,24 +122,40 @@ export function AlibabaImporter() {
     }
   };
 
-  const handlePublish = async () => {
+  const handlePrepareProductForm = () => {
     if (!scrapedProduct) return;
 
-    try {
-      // Convertir le prix en nombre (extraction basique)
-      const priceMatch = scrapedProduct.price.match(/[\d,]+/);
-      const price = priceMatch ? parseInt(priceMatch[0].replace(/,/g, '')) * 500 : 3000; // Estimation FCFA
+    const selectedImages = productImages.filter(img => img.selected).map(img => img.url);
+    const priceMatch = scrapedProduct.price.match(/[\d,]+/);
+    const estimatedPrice = priceMatch ? parseInt(priceMatch[0].replace(/,/g, '')) * 500 : 3000;
 
-      const selectedImages = productImages.filter(img => img.selected);
+    setProductFormData({
+      title: rewrittenContent.title || scrapedProduct.title,
+      description: rewrittenContent.description || scrapedProduct.description,
+      price: estimatedPrice,
+      isPremium: false,
+      variants: scrapedProduct.variants?.map(v => JSON.stringify(v)) || [],
+      selectedImages
+    });
+    setShowProductForm(true);
+  };
+
+  const handlePublish = async () => {
+    if (!productFormData.selectedImages.length) {
+      toast.error("Veuillez sélectionner au moins une image");
+      return;
+    }
+
+    try {
       const productData = {
-        title: rewrittenContent.title || scrapedProduct.title,
-        description: rewrittenContent.description || scrapedProduct.description,
-        price,
-        image_url: selectedImages.length > 0 ? selectedImages.map(img => img.url) : null,
+        title: productFormData.title,
+        description: productFormData.description,
+        price: productFormData.isPremium ? (productFormData.premiumPrice || productFormData.price) : productFormData.price,
+        image_url: productFormData.selectedImages,
         keywords: rewrittenContent.keywords ? rewrittenContent.keywords.split(',').map(k => k.trim()) : [],
         synonyms: rewrittenContent.synonyms ? rewrittenContent.synonyms.split(',').map(s => s.trim()) : [],
         is_active: true,
-        is_premium: false
+        is_premium: productFormData.isPremium
       };
 
       const { error } = await supabase
@@ -132,7 +168,16 @@ export function AlibabaImporter() {
       setScrapedProduct(null);
       setProductImages([]);
       setRewrittenContent({});
+      setProductFormData({
+        title: "",
+        description: "",
+        price: 3000,
+        isPremium: false,
+        variants: [],
+        selectedImages: []
+      });
       setUrl("");
+      setShowProductForm(false);
     } catch (error) {
       console.error("Error publishing:", error);
       toast.error("Erreur lors de la publication");
@@ -367,9 +412,123 @@ export function AlibabaImporter() {
             </div>
 
             <div className="pt-4">
+              <Button onClick={handlePrepareProductForm} className="w-full">
+                <Save className="h-4 w-4 mr-2" />
+                Configurer et Publier le Produit
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Formulaire de configuration du produit */}
+      {showProductForm && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Configuration du Produit</CardTitle>
+                <CardDescription>
+                  Configurez les détails finaux avant la publication
+                </CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowProductForm(false)}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <Label>Titre du produit</Label>
+                  <Input
+                    value={productFormData.title}
+                    onChange={(e) => setProductFormData(prev => ({ ...prev, title: e.target.value }))}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Description</Label>
+                  <Textarea
+                    value={productFormData.description}
+                    onChange={(e) => setProductFormData(prev => ({ ...prev, description: e.target.value }))}
+                    rows={4}
+                  />
+                </div>
+
+                <div>
+                  <Label>Prix de base (FCFA)</Label>
+                  <Input
+                    type="number"
+                    value={productFormData.price}
+                    onChange={(e) => setProductFormData(prev => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={productFormData.isPremium}
+                    onCheckedChange={(checked) => setProductFormData(prev => ({ ...prev, isPremium: checked }))}
+                  />
+                  <Label>Produit Premium</Label>
+                </div>
+
+                {productFormData.isPremium && (
+                  <div>
+                    <Label>Prix Premium (FCFA)</Label>
+                    <Input
+                      type="number"
+                      value={productFormData.premiumPrice || ''}
+                      onChange={(e) => setProductFormData(prev => ({ 
+                        ...prev, 
+                        premiumPrice: parseInt(e.target.value) || undefined 
+                      }))}
+                      placeholder="Prix pour la version premium"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <Label>Variables/Variants (une par ligne)</Label>
+                  <Textarea
+                    value={productFormData.variants.join('\n')}
+                    onChange={(e) => setProductFormData(prev => ({ 
+                      ...prev, 
+                      variants: e.target.value.split('\n').filter(v => v.trim()) 
+                    }))}
+                    placeholder="Couleur: Rouge, Bleu, Vert&#10;Taille: S, M, L, XL&#10;Matériau: Coton, Polyester"
+                    rows={4}
+                  />
+                </div>
+
+                <div>
+                  <Label>Images sélectionnées ({productFormData.selectedImages.length})</Label>
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {productFormData.selectedImages.map((url, index) => (
+                      <img
+                        key={index}
+                        src={url}
+                        alt={`Sélectionnée ${index + 1}`}
+                        className="w-full h-16 object-cover rounded border"
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4">
               <Button onClick={handlePublish} className="w-full">
                 <Save className="h-4 w-4 mr-2" />
-                Publier le Produit
+                Publier le Produit Final
               </Button>
             </div>
           </CardContent>

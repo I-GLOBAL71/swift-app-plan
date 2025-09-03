@@ -22,10 +22,15 @@ interface Section {
 interface Product {
   id: string;
   title: string;
+  description: string;
   price: number;
-  image_url?: string;
+  image_url: string[] | string | null;
   is_premium: boolean;
+  keywords: string[];
+  synonyms: string[];
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 const DynamicSections = () => {
@@ -133,12 +138,7 @@ const DynamicSections = () => {
             <div className="flex gap-6 min-w-max">
               {filteredProducts.map((product) => (
                 <div key={product.id} className="w-80 flex-shrink-0">
-                  <ProductCard
-                    title={product.title}
-                    price={product.price}
-                    image={product.image_url}
-                    isPremium={product.is_premium}
-                  />
+                  <ProductCard product={product} />
                 </div>
               ))}
             </div>
@@ -147,25 +147,14 @@ const DynamicSections = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProducts.map((product) => (
               <div key={product.id} className="transform hover:scale-105 transition-transform duration-300">
-                <ProductCard
-                  title={product.title}
-                  price={product.price}
-                  image={product.image_url}
-                  isPremium={product.is_premium}
-                />
+                <ProductCard product={product} />
               </div>
             ))}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                title={product.title}
-                price={product.price}
-                image={product.image_url}
-                isPremium={product.is_premium}
-              />
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         )}

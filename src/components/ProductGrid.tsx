@@ -4,20 +4,152 @@ import { Crown, Package } from "lucide-react";
 
 const ProductGrid = () => {
   const standardProducts = [
-    { title: "Sac à main artisanal en cuir" },
-    { title: "Collier traditionnel en perles" },
-    { title: "Bracelet en bois sculpté" },
-    { title: "Écharpe en tissu africain" },
-    { title: "Boucles d'oreilles en bronze" },
-    { title: "Porte-monnaie en raphia" },
-    { title: "Chaussures en cuir naturel" },
-    { title: "Ceinture artisanale" },
+    { 
+      id: "1",
+      title: "Sac à main artisanal en cuir",
+      description: "Magnifique sac en cuir artisanal",
+      price: 3000,
+      image_url: null,
+      is_premium: false,
+      keywords: [],
+      synonyms: [],
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    { 
+      id: "2",
+      title: "Collier traditionnel en perles",
+      description: "Collier traditionnel fait à la main",
+      price: 3000,
+      image_url: null,
+      is_premium: false,
+      keywords: [],
+      synonyms: [],
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    { 
+      id: "3",
+      title: "Bracelet en bois sculpté",
+      description: "Bracelet artisanal en bois sculpté",
+      price: 3000,
+      image_url: null,
+      is_premium: false,
+      keywords: [],
+      synonyms: [],
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    { 
+      id: "4",
+      title: "Écharpe en tissu africain",
+      description: "Écharpe colorée en tissu traditionnel",
+      price: 3000,
+      image_url: null,
+      is_premium: false,
+      keywords: [],
+      synonyms: [],
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    { 
+      id: "5",
+      title: "Boucles d'oreilles en bronze",
+      description: "Élégantes boucles d'oreilles en bronze",
+      price: 3000,
+      image_url: null,
+      is_premium: false,
+      keywords: [],
+      synonyms: [],
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    { 
+      id: "6",
+      title: "Porte-monnaie en raphia",
+      description: "Petit porte-monnaie en raphia tressé",
+      price: 3000,
+      image_url: null,
+      is_premium: false,
+      keywords: [],
+      synonyms: [],
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    { 
+      id: "7",
+      title: "Chaussures en cuir naturel",
+      description: "Chaussures confortables en cuir",
+      price: 3000,
+      image_url: null,
+      is_premium: false,
+      keywords: [],
+      synonyms: [],
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    { 
+      id: "8",
+      title: "Ceinture artisanale",
+      description: "Belle ceinture faite à la main",
+      price: 3000,
+      image_url: null,
+      is_premium: false,
+      keywords: [],
+      synonyms: [],
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
   ];
 
   const premiumProducts = [
-    { title: "Robe de soirée brodée à la main", price: 15000, isPremium: true },
-    { title: "Sculpture en bois précieux", price: 25000, isPremium: true },
-    { title: "Bijou en or artisanal", price: 45000, isPremium: true },
+    { 
+      id: "p1",
+      title: "Robe de soirée brodée à la main",
+      description: "Magnifique robe de soirée avec broderie artisanale",
+      price: 15000,
+      image_url: null,
+      is_premium: true,
+      keywords: [],
+      synonyms: [],
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    { 
+      id: "p2",
+      title: "Sculpture en bois précieux",
+      description: "Sculpture artisanale en bois précieux",
+      price: 25000,
+      image_url: null,
+      is_premium: true,
+      keywords: [],
+      synonyms: [],
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    { 
+      id: "p3",
+      title: "Bijou en or artisanal",
+      description: "Bijou unique en or fait main",
+      price: 45000,
+      image_url: null,
+      is_premium: true,
+      keywords: [],
+      synonyms: [],
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
   ];
 
   return (
@@ -37,11 +169,8 @@ const ProductGrid = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {standardProducts.map((product, index) => (
-            <ProductCard
-              key={index}
-              title={product.title}
-            />
+          {standardProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
         
@@ -67,13 +196,8 @@ const ProductGrid = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {premiumProducts.map((product, index) => (
-            <ProductCard
-              key={index}
-              title={product.title}
-              price={product.price}
-              isPremium={product.isPremium}
-            />
+          {premiumProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
         
