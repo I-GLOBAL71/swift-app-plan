@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductsManagement } from "@/components/admin/ProductsManagement";
 import { OrdersManagement } from "@/components/admin/OrdersManagement";
+import { CitiesManagement } from "@/components/admin/CitiesManagement";
 import { DashboardStats } from "@/components/admin/DashboardStats";
 import { SettingsManagement } from "@/components/admin/SettingsManagement";
 import SectionsManagement from "@/components/admin/SectionsManagement";
-import { LogOut, Package, ShoppingCart, BarChart3, Settings, Layout } from "lucide-react";
+import { LogOut, Package, ShoppingCart, BarChart3, Settings, Layout, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminDashboard() {
@@ -85,7 +86,7 @@ export default function AdminDashboard() {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Tableau de Bord
@@ -101,6 +102,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="orders" className="flex items-center gap-2">
               <ShoppingCart className="h-4 w-4" />
               Commandes
+            </TabsTrigger>
+            <TabsTrigger value="cities" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Villes
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -122,6 +127,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="orders">
             <OrdersManagement />
+          </TabsContent>
+
+          <TabsContent value="cities">
+            <CitiesManagement />
           </TabsContent>
 
           <TabsContent value="settings">

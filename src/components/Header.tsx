@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Crown, Menu } from "lucide-react";
+import { Crown, Menu } from "lucide-react";
+import { CartButton } from "./CartButton";
 
 const Header = () => {
   return (
@@ -30,12 +31,7 @@ const Header = () => {
           </nav>
 
           <div className="flex items-center space-x-3">
-            <Button variant="outline" size="icon" className="relative">
-              <ShoppingCart className="w-5 h-5" />
-              <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 text-xs flex items-center justify-center">
-                0
-              </span>
-            </Button>
+            <CartButton />
             <Button variant="ghost" size="icon" className="md:hidden">
               <Menu className="w-5 h-5" />
             </Button>

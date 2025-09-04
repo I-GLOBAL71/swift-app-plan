@@ -1,8 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sparkles, ShoppingCart } from "lucide-react";
 import { ProductImageCarousel } from "./ProductImageCarousel";
+import { addToCart } from "./CartButton";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "./ui/use-toast";
 
 interface ProductCardProps {
   product: {
@@ -21,10 +24,26 @@ interface ProductCardProps {
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const images = Array.isArray(product.image_url) ? product.image_url : [product.image_url].filter(Boolean);
 
   const handleProductClick = () => {
     navigate(`/product/${product.id}`);
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Empêche la navigation vers la page produit
+    addToCart({
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      image_url: product.image_url || '',
+      is_premium: product.is_premium
+    });
+    toast({
+      title: "Produit ajouté !",
+      description: `${product.title} a été ajouté au panier`,
+    });
   };
 
   return (
@@ -57,6 +76,14 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <div className="text-xl font-bold text-primary">
               {product.price.toLocaleString()} FCFA
             </div>
+            <Button 
+              size="sm" 
+              onClick={handleAddToCart}
+              className="flex items-center gap-1"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              Ajouter
+            </Button>
           </div>
         </div>
       </CardContent>

@@ -38,6 +38,39 @@ export type Database = {
         }
         Relationships: []
       }
+      cameroon_cities: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          payment_required_before_shipping: boolean
+          region: string
+          shipping_fee: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          payment_required_before_shipping?: boolean
+          region: string
+          shipping_fee?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          payment_required_before_shipping?: boolean
+          region?: string
+          shipping_fee?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
