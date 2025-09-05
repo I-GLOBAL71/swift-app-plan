@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, Phone, Mail } from "lucide-react";
+import { Eye, Phone, Mail, Clock, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
 interface Order {
@@ -16,12 +16,22 @@ interface Order {
   total_amount: number;
   status: string;
   notes: string;
+  payment_method: string;
+  expected_delivery_date: string;
   created_at: string;
+  updated_at: string;
+  city: {
+    id: string;
+    name: string;
+    region: string;
+    delivery_days: number;
+  } | null;
   order_items: {
     id: string;
     quantity: number;
     price: number;
-    products: {
+    product: {
+      id: string;
       title: string;
       is_premium: boolean;
     };
@@ -38,27 +48,26 @@ export function OrdersManagement() {
   }, []);
 
   const loadOrders = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("orders")
+        .from('orders')
         .select(`
           *,
+          city:cameroon_cities(id, name, region, delivery_days),
           order_items (
             id,
             quantity,
             price,
-            products (
-              title,
-              is_premium
-            )
+            product:products (id, title, is_premium)
           )
         `)
-        .order("created_at", { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setOrders(data || []);
     } catch (error) {
-      console.error("Erreur lors du chargement des commandes:", error);
+      console.error('Error loading orders:', error);
       toast.error("Erreur lors du chargement des commandes");
     } finally {
       setLoading(false);
@@ -83,16 +92,50 @@ export function OrdersManagement() {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      pending: { label: "En attente", variant: "secondary" as const },
-      processing: { label: "En cours", variant: "default" as const },
-      shipped: { label: "Expédiée", variant: "outline" as const },
-      delivered: { label: "Livrée", variant: "default" as const },
-      cancelled: { label: "Annulée", variant: "destructive" as const },
+    const statusColors = {
+      pending: 'bg-yellow-500',
+      confirmed: 'bg-blue-500',
+      shipped: 'bg-purple-500',
+      delivered: 'bg-green-500',
+      cancelled: 'bg-red-500'
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const statusLabels = {
+      pending: 'En attente',
+      confirmed: 'Confirmée',
+      shipped: 'Expédiée',
+      delivered: 'Livrée',
+      cancelled: 'Annulée'
+    };
+    
+    return (
+      <Badge className={`text-white ${statusColors[status as keyof typeof statusColors] || 'bg-gray-500'}`}>
+        {statusLabels[status as keyof typeof statusLabels] || status}
+      </Badge>
+    );
+  };
+
+  const getDeliveryCountdown = (expectedDate: string, status: string) => {
+    if (status === 'delivered' || status === 'cancelled') return null;
+    
+    const now = new Date();
+    const delivery = new Date(expectedDate);
+    const diff = delivery.getTime() - now.getTime();
+    
+    if (diff <= 0) {
+      return <span className="text-red-500 font-medium">Retard de livraison</span>;
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+    if (days > 0) {
+      return <span className="text-orange-500 font-medium">{days}j {hours}h restant</span>;
+    } else if (hours > 0) {
+      return <span className="text-red-500 font-medium">{hours}h restant</span>;
+    } else {
+      return <span className="text-red-500 font-medium">Livraison imminente</span>;
+    }
   };
 
   if (loading) {
@@ -109,56 +152,74 @@ export function OrdersManagement() {
         <CardHeader>
           <CardTitle>Liste des Commandes</CardTitle>
           <CardDescription>
-            Gérez toutes les commandes de vos clients
+            Gérez toutes les commandes de vos clients avec suivi intelligent des délais
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>N° Commande</TableHead>
+                <TableHead>ID</TableHead>
                 <TableHead>Client</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Montant</TableHead>
+                <TableHead>Ville</TableHead>
+                <TableHead>Total</TableHead>
                 <TableHead>Statut</TableHead>
+                <TableHead>Livraison</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {orders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium">
-                    #{order.id.slice(0, 8)}
+                <TableRow key={order.id} className={
+                  order.status === 'delivered' ? 'bg-green-50 dark:bg-green-900/10' :
+                  order.status === 'cancelled' ? 'bg-red-50 dark:bg-red-900/10' :
+                  getDeliveryCountdown(order.expected_delivery_date, order.status)?.props.className.includes('text-red-500') ? 'bg-red-50 dark:bg-red-900/10' : ''
+                }>
+                  <TableCell className="font-mono text-sm">
+                    {order.id.slice(0, 8)}
                   </TableCell>
-                  <TableCell>{order.customer_name}</TableCell>
                   <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-1 text-sm">
-                        <Phone className="h-3 w-3" />
-                        {order.customer_phone}
-                      </div>
-                      {order.customer_email && (
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Mail className="h-3 w-3" />
-                          {order.customer_email}
-                        </div>
-                      )}
+                    <div>
+                      <p className="font-medium">{order.customer_name}</p>
+                      <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
                     </div>
                   </TableCell>
-                  <TableCell>{order.total_amount.toLocaleString()} FCFA</TableCell>
-                  <TableCell>{getStatusBadge(order.status)}</TableCell>
                   <TableCell>
-                    {new Date(order.created_at).toLocaleDateString("fr-FR")}
+                    {order.city ? (
+                      <div>
+                        <p className="font-medium">{order.city.name}</p>
+                        <p className="text-sm text-muted-foreground">{order.city.region}</p>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">Non définie</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {order.total_amount.toLocaleString()} FCFA
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    {getStatusBadge(order.status)}
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <p className="text-sm font-medium">
+                        {new Date(order.expected_delivery_date).toLocaleDateString('fr-FR')}
+                      </p>
+                      {getDeliveryCountdown(order.expected_delivery_date, order.status)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {new Date(order.created_at).toLocaleDateString('fr-FR')}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
                       <Button
-                        variant="outline"
                         size="sm"
+                        variant="outline"
                         onClick={() => setSelectedOrder(order)}
                       >
-                        <Eye className="h-4 w-4" />
+                        Détails
                       </Button>
                       <Select
                         value={order.status}
@@ -169,7 +230,7 @@ export function OrdersManagement() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="pending">En attente</SelectItem>
-                          <SelectItem value="processing">En cours</SelectItem>
+                          <SelectItem value="confirmed">Confirmée</SelectItem>
                           <SelectItem value="shipped">Expédiée</SelectItem>
                           <SelectItem value="delivered">Livrée</SelectItem>
                           <SelectItem value="cancelled">Annulée</SelectItem>
@@ -185,66 +246,80 @@ export function OrdersManagement() {
       </Card>
 
       {selectedOrder && (
-        <Card>
+        <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Détails de la Commande #{selectedOrder.id.slice(0, 8)}</CardTitle>
-            <CardDescription>
-              Informations complètes de la commande
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div>
-                <h3 className="font-semibold mb-4">Informations Client</h3>
-                <div className="space-y-2">
-                  <p><strong>Nom:</strong> {selectedOrder.customer_name}</p>
-                  <p><strong>Téléphone:</strong> {selectedOrder.customer_phone}</p>
-                  {selectedOrder.customer_email && (
-                    <p><strong>Email:</strong> {selectedOrder.customer_email}</p>
-                  )}
-                  <p><strong>Statut:</strong> {getStatusBadge(selectedOrder.status)}</p>
-                  <p><strong>Date:</strong> {new Date(selectedOrder.created_at).toLocaleString("fr-FR")}</p>
-                </div>
-                {selectedOrder.notes && (
-                  <div className="mt-4">
-                    <h4 className="font-semibold">Notes:</h4>
-                    <p className="text-sm text-muted-foreground">{selectedOrder.notes}</p>
-                  </div>
-                )}
-              </div>
-              
-              <div>
-                <h3 className="font-semibold mb-4">Articles Commandés</h3>
-                <div className="space-y-3">
-                  {selectedOrder.order_items.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center p-3 border rounded">
-                      <div>
-                        <p className="font-medium">{item.products.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Quantité: {item.quantity} × {item.price.toLocaleString()} FCFA
-                        </p>
-                      </div>
-                      {item.products.is_premium && (
-                        <Badge variant="secondary" className="bg-gradient-premium text-premium-foreground">
-                          Premium
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
-                  <div className="border-t pt-3 mt-3">
-                    <div className="flex justify-between items-center font-semibold">
-                      <span>Total:</span>
-                      <span>{selectedOrder.total_amount.toLocaleString()} FCFA</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-6 flex gap-4">
+            <CardTitle className="flex items-center justify-between">
+              Détails de la commande
               <Button variant="outline" onClick={() => setSelectedOrder(null)}>
                 Fermer
               </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Informations client</h4>
+                  <div className="space-y-1">
+                    <p><span className="font-medium">Nom:</span> {selectedOrder.customer_name}</p>
+                    <p><span className="font-medium">Téléphone:</span> {selectedOrder.customer_phone}</p>
+                    {selectedOrder.customer_email && (
+                      <p><span className="font-medium">Email:</span> {selectedOrder.customer_email}</p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Détails de la commande</h4>
+                  <div className="space-y-1">
+                    <p><span className="font-medium">ID:</span> {selectedOrder.id}</p>
+                    <p><span className="font-medium">Statut:</span> {getStatusBadge(selectedOrder.status)}</p>
+                    <p><span className="font-medium">Total:</span> {selectedOrder.total_amount.toLocaleString()} FCFA</p>
+                    <p><span className="font-medium">Paiement:</span> {selectedOrder.payment_method === 'cash_on_delivery' ? 'À la livraison' : 'CoolPay'}</p>
+                    <p><span className="font-medium">Date:</span> {new Date(selectedOrder.created_at).toLocaleString('fr-FR')}</p>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Livraison</h4>
+                  <div className="space-y-1">
+                    {selectedOrder.city ? (
+                      <>
+                        <p><span className="font-medium">Ville:</span> {selectedOrder.city.name}</p>
+                        <p><span className="font-medium">Région:</span> {selectedOrder.city.region}</p>
+                        <p><span className="font-medium">Délai:</span> {selectedOrder.city.delivery_days} jours</p>
+                        <p><span className="font-medium">Prévue le:</span> {new Date(selectedOrder.expected_delivery_date).toLocaleDateString('fr-FR')}</p>
+                        <div className="mt-2">
+                          {getDeliveryCountdown(selectedOrder.expected_delivery_date, selectedOrder.status)}
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-muted-foreground">Ville non définie</p>
+                    )}
+                    {selectedOrder.notes && (
+                      <p><span className="font-medium">Notes:</span> {selectedOrder.notes}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-2">Articles commandés</h4>
+                <div className="space-y-2">
+                  {selectedOrder.order_items.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                      <div>
+                        <p className="font-medium">{item.product.title}</p>
+                        {item.product.is_premium && (
+                          <Badge variant="secondary" className="mt-1">Premium</Badge>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p>Quantité: {item.quantity}</p>
+                        <p className="font-medium">{(item.price * item.quantity).toLocaleString()} FCFA</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

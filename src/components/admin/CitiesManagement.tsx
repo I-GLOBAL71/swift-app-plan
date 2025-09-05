@@ -4,12 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Pencil, Save, X, Plus } from 'lucide-react';
+import { Plus, Pencil, Save, X } from 'lucide-react';
 
 interface City {
   id: string;
@@ -17,7 +17,10 @@ interface City {
   region: string;
   shipping_fee: number;
   payment_required_before_shipping: boolean;
+  delivery_days: number;
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 const CAMEROON_REGIONS = [
@@ -28,14 +31,14 @@ const CAMEROON_REGIONS = [
 export function CitiesManagement() {
   const [cities, setCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Partial<City>>({});
+  const [editingCity, setEditingCity] = useState<City | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newCityForm, setNewCityForm] = useState({
+  const [newCity, setNewCity] = useState({
     name: '',
     region: '',
     shipping_fee: 0,
-    payment_required_before_shipping: false
+    payment_required_before_shipping: false,
+    delivery_days: 3
   });
   const { toast } = useToast();
 
@@ -48,12 +51,13 @@ export function CitiesManagement() {
       const { data, error } = await supabase
         .from('cameroon_cities')
         .select('*')
-        .order('region', { ascending: true })
-        .order('name', { ascending: true });
+        .order('region')
+        .order('name');
 
       if (error) throw error;
       setCities(data || []);
     } catch (error) {
+      console.error('Error loading cities:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les villes",
@@ -64,44 +68,8 @@ export function CitiesManagement() {
     }
   };
 
-  const handleEdit = (city: City) => {
-    setEditingId(city.id);
-    setEditForm(city);
-  };
-
-  const handleSave = async () => {
-    if (!editingId) return;
-
-    try {
-      const { error } = await supabase
-        .from('cameroon_cities')
-        .update({
-          shipping_fee: editForm.shipping_fee,
-          payment_required_before_shipping: editForm.payment_required_before_shipping,
-          is_active: editForm.is_active
-        })
-        .eq('id', editingId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Succès",
-        description: "Ville mise à jour avec succès",
-      });
-      
-      setEditingId(null);
-      loadCities();
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour la ville",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleAddCity = async () => {
-    if (!newCityForm.name || !newCityForm.region) {
+    if (!newCity.name || !newCity.region) {
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs obligatoires",
@@ -113,29 +81,26 @@ export function CitiesManagement() {
     try {
       const { error } = await supabase
         .from('cameroon_cities')
-        .insert([{
-          name: newCityForm.name,
-          region: newCityForm.region,
-          shipping_fee: newCityForm.shipping_fee * 100, // Convert to cents
-          payment_required_before_shipping: newCityForm.payment_required_before_shipping
-        }]);
+        .insert([newCity]);
 
       if (error) throw error;
 
       toast({
         title: "Succès",
-        description: "Nouvelle ville ajoutée avec succès",
+        description: "Ville ajoutée avec succès",
       });
-      
-      setShowAddForm(false);
-      setNewCityForm({
+
+      setNewCity({
         name: '',
         region: '',
         shipping_fee: 0,
-        payment_required_before_shipping: false
+        payment_required_before_shipping: false,
+        delivery_days: 3
       });
+      setShowAddForm(false);
       loadCities();
     } catch (error) {
+      console.error('Error adding city:', error);
       toast({
         title: "Erreur",
         description: "Impossible d'ajouter la ville",
@@ -144,8 +109,28 @@ export function CitiesManagement() {
     }
   };
 
-  const formatPrice = (priceInCents: number) => {
-    return (priceInCents / 100).toLocaleString('fr-FR') + ' XAF';
+  const toggleCityStatus = async (id: string, isActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('cameroon_cities')
+        .update({ is_active: isActive })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: `Ville ${isActive ? 'activée' : 'désactivée'} avec succès`,
+      });
+      loadCities();
+    } catch (error) {
+      console.error('Error updating city status:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le statut",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -154,78 +139,98 @@ export function CitiesManagement() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Gestion des Villes du Cameroun</CardTitle>
-          <Button onClick={() => setShowAddForm(true)} className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Ajouter une ville
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {showAddForm && (
-            <div className="mb-6 p-4 border rounded-lg bg-muted/50">
-              <h3 className="text-lg font-medium mb-4">Ajouter une nouvelle ville</h3>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Gestion des Villes</h2>
+        <Button onClick={() => setShowAddForm(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Ajouter une ville
+        </Button>
+      </div>
+
+      {showAddForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Ajouter une nouvelle ville</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="new-city-name">Nom de la ville *</Label>
+                  <Label htmlFor="name">Nom de la ville</Label>
                   <Input
-                    id="new-city-name"
-                    value={newCityForm.name}
-                    onChange={(e) => setNewCityForm(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Ex: Yaoundé"
+                    id="name"
+                    value={newCity.name}
+                    onChange={(e) => setNewCity({ ...newCity, name: e.target.value })}
+                    placeholder="Ex: Douala"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="new-city-region">Région *</Label>
-                  <Select
-                    value={newCityForm.region}
-                    onValueChange={(value) => setNewCityForm(prev => ({ ...prev, region: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner une région" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CAMEROON_REGIONS.map((region) => (
-                        <SelectItem key={region} value={region}>
-                          {region}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="region">Région</Label>
+                  <Input
+                    id="region"
+                    value={newCity.region}
+                    onChange={(e) => setNewCity({ ...newCity, region: e.target.value })}
+                    placeholder="Ex: Littoral"
+                  />
                 </div>
                 <div>
-                  <Label htmlFor="new-city-shipping">Frais d'expédition (XAF)</Label>
+                  <Label htmlFor="shipping_fee">Frais de livraison (FCFA)</Label>
                   <Input
-                    id="new-city-shipping"
+                    id="shipping_fee"
                     type="number"
-                    value={newCityForm.shipping_fee}
-                    onChange={(e) => setNewCityForm(prev => ({ ...prev, shipping_fee: parseInt(e.target.value) || 0 }))}
-                    placeholder="1500"
+                    value={newCity.shipping_fee}
+                    onChange={(e) => setNewCity({ ...newCity, shipping_fee: parseInt(e.target.value) || 0 })}
+                    placeholder="Ex: 2000"
                   />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="new-city-payment"
-                    checked={newCityForm.payment_required_before_shipping}
-                    onCheckedChange={(checked) => setNewCityForm(prev => ({ ...prev, payment_required_before_shipping: checked }))}
+                <div>
+                  <Label htmlFor="delivery_days">Délai de livraison (jours)</Label>
+                  <Input
+                    id="delivery_days"
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={newCity.delivery_days}
+                    onChange={(e) => setNewCity({ ...newCity, delivery_days: parseInt(e.target.value) || 3 })}
+                    placeholder="Ex: 3"
                   />
-                  <Label htmlFor="new-city-payment">Paiement obligatoire avant expédition</Label>
+                </div>
+                <div className="md:col-span-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="payment_required"
+                      checked={newCity.payment_required_before_shipping}
+                      onCheckedChange={(checked) => 
+                        setNewCity({ ...newCity, payment_required_before_shipping: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="payment_required" className="text-sm">
+                      Paiement obligatoire avant expédition
+                    </Label>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 mt-4">
+              <div className="flex gap-2">
                 <Button onClick={handleAddCity}>Ajouter</Button>
                 <Button variant="outline" onClick={() => setShowAddForm(false)}>Annuler</Button>
               </div>
             </div>
-          )}
+          </CardContent>
+        </Card>
+      )}
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Liste des villes</CardTitle>
+        </CardHeader>
+        <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Ville</TableHead>
                 <TableHead>Région</TableHead>
-                <TableHead>Frais d'expédition</TableHead>
+                <TableHead>Frais de livraison</TableHead>
+                <TableHead>Délai (jours)</TableHead>
                 <TableHead>Paiement obligatoire</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead>Actions</TableHead>
@@ -236,66 +241,37 @@ export function CitiesManagement() {
                 <TableRow key={city.id}>
                   <TableCell className="font-medium">{city.name}</TableCell>
                   <TableCell>{city.region}</TableCell>
+                  <TableCell>{city.shipping_fee.toLocaleString()} FCFA</TableCell>
                   <TableCell>
-                    {editingId === city.id ? (
-                      <Input
-                        type="number"
-                        value={(editForm.shipping_fee || 0) / 100}
-                        onChange={(e) => setEditForm(prev => ({ 
-                          ...prev, 
-                          shipping_fee: parseInt(e.target.value) * 100 || 0 
-                        }))}
-                        className="w-32"
-                      />
-                    ) : (
-                      formatPrice(city.shipping_fee)
-                    )}
+                    <Badge variant="outline">{city.delivery_days} jour{city.delivery_days > 1 ? 's' : ''}</Badge>
                   </TableCell>
                   <TableCell>
-                    {editingId === city.id ? (
-                      <Switch
-                        checked={editForm.payment_required_before_shipping}
-                        onCheckedChange={(checked) => setEditForm(prev => ({ 
-                          ...prev, 
-                          payment_required_before_shipping: checked 
-                        }))}
-                      />
-                    ) : (
-                      <Badge variant={city.payment_required_before_shipping ? "default" : "secondary"}>
-                        {city.payment_required_before_shipping ? 'Obligatoire' : 'Optionnel'}
-                      </Badge>
-                    )}
+                    <Badge variant={city.payment_required_before_shipping ? "destructive" : "secondary"}>
+                      {city.payment_required_before_shipping ? "Obligatoire" : "Optionnel"}
+                    </Badge>
                   </TableCell>
                   <TableCell>
-                    {editingId === city.id ? (
-                      <Switch
-                        checked={editForm.is_active}
-                        onCheckedChange={(checked) => setEditForm(prev => ({ 
-                          ...prev, 
-                          is_active: checked 
-                        }))}
-                      />
-                    ) : (
-                      <Badge variant={city.is_active ? "default" : "destructive"}>
-                        {city.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
-                    )}
+                    <Badge variant={city.is_active ? "default" : "secondary"}>
+                      {city.is_active ? "Active" : "Inactive"}
+                    </Badge>
                   </TableCell>
                   <TableCell>
-                    {editingId === city.id ? (
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" onClick={handleSave}>
-                          <Save className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(city)}>
-                        <Pencil className="w-4 h-4" />
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingCity(city)}
+                      >
+                        Modifier
                       </Button>
-                    )}
+                      <Button
+                        size="sm"
+                        variant={city.is_active ? "destructive" : "default"}
+                        onClick={() => toggleCityStatus(city.id, !city.is_active)}
+                      >
+                        {city.is_active ? "Désactiver" : "Activer"}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

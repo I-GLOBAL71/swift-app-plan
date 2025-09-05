@@ -41,6 +41,7 @@ export type Database = {
       cameroon_cities: {
         Row: {
           created_at: string
+          delivery_days: number
           id: string
           is_active: boolean
           name: string
@@ -51,6 +52,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          delivery_days?: number
           id?: string
           is_active?: boolean
           name: string
@@ -61,6 +63,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          delivery_days?: number
           id?: string
           is_active?: boolean
           name?: string
@@ -115,39 +118,59 @@ export type Database = {
       }
       orders: {
         Row: {
+          city_id: string | null
           created_at: string
           customer_email: string | null
           customer_name: string
           customer_phone: string
+          delivery_address: string | null
+          expected_delivery_date: string | null
           id: string
           notes: string | null
+          payment_method: string | null
           status: string
           total_amount: number
           updated_at: string
         }
         Insert: {
+          city_id?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name: string
           customer_phone: string
+          delivery_address?: string | null
+          expected_delivery_date?: string | null
           id?: string
           notes?: string | null
+          payment_method?: string | null
           status?: string
           total_amount: number
           updated_at?: string
         }
         Update: {
+          city_id?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string
           customer_phone?: string
+          delivery_address?: string | null
+          expected_delivery_date?: string | null
           id?: string
           notes?: string | null
+          payment_method?: string | null
           status?: string
           total_amount?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cameroon_cities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {

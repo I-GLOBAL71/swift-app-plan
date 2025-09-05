@@ -29,6 +29,7 @@ interface City {
   region: string;
   shipping_fee: number;
   payment_required_before_shipping: boolean;
+  delivery_days: number;
 }
 
 interface CheckoutModalProps {
@@ -84,8 +85,8 @@ export function CheckoutModal({ isOpen, onClose, cartItems, onOrderComplete }: C
   const shippingFee = selectedCityData?.shipping_fee || 0;
   const total = subtotal + shippingFee;
 
-  const formatPrice = (priceInCents: number) => {
-    return (priceInCents / 100).toLocaleString('fr-FR') + ' XAF';
+  const formatPrice = (price: number) => {
+    return price.toLocaleString('fr-FR') + ' FCFA';
   };
 
   const getImageUrl = (imageUrl: string | string[]) => {
@@ -114,16 +115,24 @@ export function CheckoutModal({ isOpen, onClose, cartItems, onOrderComplete }: C
     // Traitement pour paiement à la livraison
     setLoading(true);
     try {
-      const { data: orderResult, error: orderError } = await supabase
-        .from('orders')
-        .insert([{
-          customer_name: customerInfo.name,
-          customer_phone: customerInfo.phone,
-          customer_email: customerInfo.email,
-          total_amount: total,
-          status: 'pending',
-          notes: `Ville: ${selectedCityData?.name}, Paiement: À la livraison`
-        }])
+        // Calculate expected delivery date
+        const deliveryDays = selectedCityData?.delivery_days || 3;
+        const expectedDeliveryDate = new Date();
+        expectedDeliveryDate.setDate(expectedDeliveryDate.getDate() + deliveryDays);
+
+        const { data: orderResult, error: orderError } = await supabase
+          .from('orders')
+          .insert([{
+            customer_name: customerInfo.name,
+            customer_phone: customerInfo.phone,
+            customer_email: customerInfo.email,
+            total_amount: total,
+            status: 'pending',
+            city_id: selectedCity,
+            expected_delivery_date: expectedDeliveryDate.toISOString(),
+            payment_method: paymentMethod,
+            notes: `Ville: ${selectedCityData?.name}, Paiement: À la livraison`
+          }])
         .select('id')
         .single();
 
@@ -150,6 +159,9 @@ export function CheckoutModal({ isOpen, onClose, cartItems, onOrderComplete }: C
         description: "Votre commande a été enregistrée avec succès",
       });
 
+      // Redirect to order confirmation page
+      window.location.href = `/order-confirmation?orderId=${orderResult.id}`;
+      
       onOrderComplete();
       onClose();
     } catch (error) {
@@ -164,11 +176,16 @@ export function CheckoutModal({ isOpen, onClose, cartItems, onOrderComplete }: C
     }
   };
 
-  const handleCoolPaySuccess = (transactionId: string) => {
+  const handleCoolPaySuccess = (transactionId: string, orderId?: string) => {
     toast({
       title: "Paiement réussi !",
       description: `Transaction: ${transactionId}`,
     });
+    
+    if (orderId) {
+      window.location.href = `/order-confirmation?orderId=${orderId}`;
+    }
+    
     onOrderComplete();
     onClose();
   };
