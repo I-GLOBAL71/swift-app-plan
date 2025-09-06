@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PriceSettings } from "./PriceSettings";
 import { CoolPaySettings } from "./CoolPaySettings";
+import { ApiSettings } from "./ApiSettings";
 import { toast } from "sonner";
 import { Save, Settings, DollarSign, Palette } from "lucide-react";
 
@@ -94,10 +95,14 @@ export function SettingsManagement() {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             Général
+          </TabsTrigger>
+          <TabsTrigger value="api" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            API
           </TabsTrigger>
           <TabsTrigger value="pricing" className="flex items-center gap-2">
             <DollarSign className="h-4 w-4" />
@@ -158,11 +163,15 @@ export function SettingsManagement() {
               </form>
             </CardContent>
           </Card>
-        </TabsContent>
+          </TabsContent>
 
-        <TabsContent value="pricing">
-          <PriceSettings />
-        </TabsContent>
+          <TabsContent value="api">
+            <ApiSettings />
+          </TabsContent>
+
+          <TabsContent value="pricing">
+            <PriceSettings />
+          </TabsContent>
         <TabsContent value="coolpay">
           <CoolPaySettings />
         </TabsContent>
