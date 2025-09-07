@@ -88,6 +88,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
 
       setFormData({
         ...formData,
+        title: data.data?.title || formData.title,
         description: data.data?.description || formData.description,
         keywords: Array.isArray(data.data?.keywords) ? data.data.keywords : formData.keywords,
         synonyms: Array.isArray(data.data?.synonyms) ? data.data.synonyms : formData.synonyms,
@@ -122,7 +123,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
           )}
         </CardTitle>
         <CardDescription>
-          Remplissez les informations du produit. Utilisez l'IA pour améliorer automatiquement le contenu.
+          Remplissez les informations du produit. Utilisez l'IA pour améliorer automatiquement le titre, la description, les mots-clés et les synonymes.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -150,7 +151,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                     disabled={enhancing}
                   >
                     <Wand2 className="h-4 w-4 mr-2" />
-                    {enhancing ? "Amélioration..." : "Améliorer avec IA"}
+                    {enhancing ? "Amélioration..." : "Améliorer tout avec IA"}
                   </Button>
                 </div>
                 <Textarea
