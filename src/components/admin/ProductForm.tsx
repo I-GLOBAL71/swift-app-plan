@@ -34,8 +34,8 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
     price: product?.price || 3000,
     image_url: product?.image_url || "",
     is_premium: product?.is_premium || false,
-    keywords: product?.keywords || [],
-    synonyms: product?.synonyms || [],
+    keywords: Array.isArray(product?.keywords) ? product.keywords : [],
+    synonyms: Array.isArray(product?.synonyms) ? product.synonyms : [],
     is_active: product?.is_active ?? true,
   });
   const [loading, setLoading] = useState(false);
@@ -88,9 +88,9 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
 
       setFormData({
         ...formData,
-        description: data.description,
-        keywords: data.keywords,
-        synonyms: data.synonyms,
+        description: data.data?.description || formData.description,
+        keywords: Array.isArray(data.data?.keywords) ? data.data.keywords : formData.keywords,
+        synonyms: Array.isArray(data.data?.synonyms) ? data.data.synonyms : formData.synonyms,
       });
 
       toast.success("Contenu amélioré avec l'IA!");
@@ -206,7 +206,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                 <Label htmlFor="keywords">Mots-clés (séparés par des virgules)</Label>
                 <Input
                   id="keywords"
-                  value={formData.keywords.join(", ")}
+                  value={Array.isArray(formData.keywords) ? formData.keywords.join(", ") : ""}
                   onChange={(e) => handleKeywordsChange(e.target.value)}
                   placeholder="mode, élégant, qualité"
                 />
@@ -216,7 +216,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                 <Label htmlFor="synonyms">Synonymes (séparés par des virgules)</Label>
                 <Input
                   id="synonyms"
-                  value={formData.synonyms.join(", ")}
+                  value={Array.isArray(formData.synonyms) ? formData.synonyms.join(", ") : ""}
                   onChange={(e) => handleSynonymsChange(e.target.value)}
                   placeholder="vêtement, habit, tenue"
                 />
