@@ -125,7 +125,7 @@ const StandardSection = () => {
               <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
                 Explorez notre catalogue complet et trouvez le produit parfait au prix qui vous convient.
               </p>
-              <Button variant="outline" size="lg" className="group">
+              <Button variant="outline" size="lg" className="group w-full sm:w-auto">
                 <Package className="w-5 h-5 mr-2" />
                 Voir Tous les Produits
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />

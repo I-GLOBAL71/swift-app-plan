@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSettings } from "@/contexts/SettingsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,10 +29,11 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) {
+  const { globalPrice } = useSettings();
   const [formData, setFormData] = useState<Product>({
     title: product?.title || "",
     description: product?.description || "",
-    price: product?.price || 3000,
+    price: product?.price || globalPrice,
     image_url: product?.image_url || "",
     is_premium: product?.is_premium || false,
     keywords: Array.isArray(product?.keywords) ? product.keywords : [],

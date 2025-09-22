@@ -1,27 +1,15 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import ProductCard from "@/components/ProductCard";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import { Crown, Sparkles, Star, Filter, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  image_url: string[] | string | null;
-  is_premium: boolean;
-  keywords: string[];
-  synonyms: string[];
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { Tables } from "@/integrations/supabase/types";
+
+type Product = Tables<"products">;
 
 const PremiumProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -47,7 +35,7 @@ const PremiumProducts = () => {
         .eq("is_active", true);
 
       if (error) throw error;
-      setProducts(data as Product[] || []);
+      setProducts(data || []);
     } catch (error) {
       console.error("Error loading premium products:", error);
       toast.error("Erreur lors du chargement des produits premium");
@@ -59,8 +47,8 @@ const PremiumProducts = () => {
   const filterAndSortProducts = () => {
     let filtered = products.filter(product =>
       product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.keywords.some(keyword => keyword.toLowerCase().includes(searchTerm.toLowerCase()))
+      product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.keywords?.some(keyword => keyword.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     // Sort products
@@ -86,9 +74,7 @@ const PremiumProducts = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
+    <>
       {/* Hero Section */}
       <section className="relative py-20 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-premium/10 via-transparent to-accent/10"></div>
@@ -108,7 +94,7 @@ const PremiumProducts = () => {
             </div>
             
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-8">
-              Découvrez nos pièces d'exception, conçues avec les meilleurs matériaux et un savoir-faire artisanal unique. 
+              Découvrez nos pièces d'exception, conçues avec les meilleurs matériaux et un savoir-faire artisanal unique.
               Chaque produit raconte une histoire d'excellence et d'authenticité.
             </p>
 
@@ -185,8 +171,8 @@ const PremiumProducts = () => {
           ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {filteredProducts.map((product, index) => (
-                <div 
-                  key={product.id} 
+                <div
+                  key={product.id}
                   className="transform hover:scale-105 transition-transform duration-500 animate-fade-in"
                   style={{ animationDelay: `${index * 0.05}s` }}
                 >
@@ -208,14 +194,14 @@ const PremiumProducts = () => {
                 {searchTerm ? "Aucun produit trouvé" : "Collection premium à venir"}
               </h3>
               <p className="text-muted-foreground mb-6">
-                {searchTerm 
+                {searchTerm
                   ? `Aucun produit premium ne correspond à "${searchTerm}"`
                   : "Notre collection de produits premium sera bientôt disponible."
                 }
               </p>
               {searchTerm && (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setSearchTerm("")}
                 >
                   Effacer la recherche
@@ -225,9 +211,7 @@ const PremiumProducts = () => {
           )}
         </div>
       </section>
-
-      <Footer />
-    </div>
+    </>
   );
 };
 

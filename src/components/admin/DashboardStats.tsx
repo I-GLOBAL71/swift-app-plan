@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { useSettings } from "@/contexts/SettingsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, ShoppingCart, TrendingUp, Users } from "lucide-react";
 
 export function DashboardStats() {
+  const { globalPrice } = useSettings();
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalOrders: 0,
@@ -118,7 +120,7 @@ export function DashboardStats() {
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span>Produits Standard (3000 FCFA)</span>
+                <span>Produits Standard ({globalPrice.toLocaleString()} FCFA)</span>
                 <span className="font-semibold">{stats.standardProducts}</span>
               </div>
               <div className="flex items-center justify-between">

@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 interface HeroSlide {
@@ -52,22 +53,13 @@ const HeroSlidesManagement = () => {
 
   const loadSlides = async () => {
     try {
-      // Pour l'instant, utilisation de slides par défaut
-      // TODO: Créer la table hero_slides dans Supabase
-      setSlides([
-        {
-          id: 'default-1',
-          title: 'Shopping',
-          subtitle: 'Simple & Accessible',
-          description: 'Tous nos produits à prix unique de 3000 FCFA. Une expérience d\'achat simplifiée pour tous.',
-          image_url: '/src/assets/hero-banner.jpg',
-          button_text: 'Découvrir nos produits',
-          button_link: '#products',
-          is_active: true,
-          order_index: 0,
-          created_at: new Date().toISOString()
-        }
-      ]);
+      const { data, error } = await supabase
+        .from("hero_slides")
+        .select("*")
+        .order("order_index", { ascending: true });
+
+      if (error) throw error;
+      setSlides(data || []);
     } catch (error) {
       console.error("Error loading hero slides:", error);
       toast.error("Erreur lors du chargement des diapositives");
@@ -111,12 +103,33 @@ const HeroSlidesManagement = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      // TODO: Implémenter avec Supabase quand la table sera créée
-      toast.success("Fonctionnalité à venir - table hero_slides à créer");
-      setIsDialogOpen(false);
-      resetForm();
+      let result;
+      const slideData = { ...formData };
+
+      if (editingSlide) {
+        result = await supabase
+          .from("hero_slides")
+          .update(slideData)
+          .eq("id", editingSlide.id)
+          .select();
+      } else {
+        result = await supabase.from("hero_slides").insert(slideData).select();
+      }
+
+      const { data, error } = result;
+
+      if (error) throw error;
+
+      if (data) {
+        toast.success(
+          `Diapositive ${editingSlide ? "mise à jour" : "créée"} avec succès`
+        );
+        setIsDialogOpen(false);
+        resetForm();
+        loadSlides();
+      }
     } catch (error) {
       console.error("Error saving slide:", error);
       toast.error("Erreur lors de la sauvegarde");
@@ -127,8 +140,10 @@ const HeroSlidesManagement = () => {
     if (!confirm("Êtes-vous sûr de vouloir supprimer cette diapositive ?")) return;
 
     try {
-      // TODO: Implémenter avec Supabase
-      toast.success("Fonctionnalité à venir");
+      const { error } = await supabase.from("hero_slides").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Diapositive supprimée avec succès");
+      loadSlides();
     } catch (error) {
       console.error("Error deleting slide:", error);
       toast.error("Erreur lors de la suppression");
@@ -137,8 +152,14 @@ const HeroSlidesManagement = () => {
 
   const toggleActive = async (id: string, isActive: boolean) => {
     try {
-      // TODO: Implémenter avec Supabase
-      toast.success("Fonctionnalité à venir");
+      const { error } = await supabase
+        .from("hero_slides")
+        .update({ is_active: !isActive })
+        .eq("id", id);
+
+      if (error) throw error;
+      toast.success("Statut de la diapositive mis à jour");
+      loadSlides();
     } catch (error) {
       console.error("Error toggling slide:", error);
       toast.error("Erreur lors de la modification");
@@ -172,6 +193,9 @@ const HeroSlidesManagement = () => {
               <DialogTitle>
                 {editingSlide ? "Modifier la diapositive" : "Nouvelle diapositive"}
               </DialogTitle>
+              <DialogDescription>
+                Remplissez les informations ci-dessous pour créer ou modifier une diapositive.
+              </DialogDescription>
             </DialogHeader>
             
             <form onSubmit={handleSubmit} className="space-y-6">

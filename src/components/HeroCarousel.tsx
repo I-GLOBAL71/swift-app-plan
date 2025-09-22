@@ -14,6 +14,7 @@ interface HeroSlide {
   button_link: string;
   is_active: boolean;
   order_index: number;
+  created_at: string;
 }
 
 const HeroCarousel = () => {
@@ -39,31 +40,14 @@ const HeroCarousel = () => {
 
   const loadSlides = async () => {
     try {
-      // Fallback to default slides for now - will be configurable later
-      setSlides([
-        {
-          id: 'default-1',
-          title: 'Shopping',
-          subtitle: 'Simple & Accessible',
-          description: 'Tous nos produits à prix unique de 3000 FCFA. Une expérience d\'achat simplifiée pour tous.',
-          image_url: '/src/assets/hero-banner.jpg',
-          button_text: 'Découvrir nos produits',
-          button_link: '#products',
-          is_active: true,
-          order_index: 0
-        },
-        {
-          id: 'default-2',
-          title: 'Collection',
-          subtitle: 'Premium Exclusive',
-          description: 'Découvrez nos créations d\'exception, façonnées avec passion et expertise artisanale.',
-          image_url: '/src/assets/hero-banner.jpg',
-          button_text: 'Explorer Premium',
-          button_link: '/premium',
-          is_active: true,
-          order_index: 1
-        }
-      ]);
+      const { data, error } = await supabase
+        .from("hero_slides")
+        .select("*")
+        .eq("is_active", true)
+        .order("order_index", { ascending: true });
+
+      if (error) throw error;
+      setSlides(data || []);
     } catch (error) {
       console.error("Error loading hero slides:", error);
     } finally {
@@ -107,7 +91,7 @@ const HeroCarousel = () => {
   const currentSlideData = slides[currentSlide];
 
   return (
-    <section className="relative min-h-[70vh] flex items-center overflow-hidden">
+    <section className="relative min-h-[80vh] md:min-h-[70vh] flex items-center overflow-hidden">
       {/* Background Image with Overlay */}
       <div 
         className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
@@ -125,7 +109,7 @@ const HeroCarousel = () => {
           <Button
             variant="outline"
             size="icon"
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-background/80 border-primary/20 hover:bg-primary/10"
+            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-background/80 border-primary/20 hover:bg-primary/10"
             onClick={prevSlide}
           >
             <ChevronLeft className="w-5 h-5" />
@@ -134,7 +118,7 @@ const HeroCarousel = () => {
           <Button
             variant="outline"
             size="icon"
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-background/80 border-primary/20 hover:bg-primary/10"
+            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-background/80 border-primary/20 hover:bg-primary/10"
             onClick={nextSlide}
           >
             <ChevronRight className="w-5 h-5" />
@@ -168,7 +152,7 @@ const HeroCarousel = () => {
           </div>
           
           <h1 
-            className="text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight animate-fade-in"
+            className="text-3xl sm:text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight animate-fade-in"
             style={{ animationDelay: '0.1s' }}
           >
             {currentSlideData.title}

@@ -7,8 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProductImageCarousel } from "@/components/ProductImageCarousel";
 import { ArrowLeft, ShoppingCart, Heart, Share2, Sparkles, Star } from "lucide-react";
 import { toast } from "sonner";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import { useCart } from "@/contexts/CartContext";
 
 interface Product {
   id: string;
@@ -26,6 +25,7 @@ interface Product {
 export function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addToCart } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -58,7 +58,9 @@ export function ProductDetail() {
   };
 
   const handleAddToCart = () => {
-    toast.success("Produit ajouté au panier");
+    if (product) {
+      addToCart(product, quantity);
+    }
   };
 
   const handleShare = async () => {
@@ -80,33 +82,25 @@ export function ProductDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p>Chargement du produit...</p>
-          </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Chargement du produit...</p>
         </div>
-        <Footer />
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Produit non trouvé</h1>
-            <Button onClick={() => navigate("/")} variant="outline">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour à l'accueil
-            </Button>
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Produit non trouvé</h1>
+          <Button onClick={() => navigate("/")} variant="outline">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Retour à l'accueil
+          </Button>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -115,10 +109,7 @@ export function ProductDetail() {
                  (product.image_url ? [product.image_url as string] : []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="container mx-auto px-4 py-8">
+    <main className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-6 text-sm text-muted-foreground">
           <button onClick={() => navigate("/")} className="hover:text-foreground transition-colors">
@@ -278,10 +269,7 @@ export function ProductDetail() {
             ))}
           </div>
         </div>
-      </main>
-
-      <Footer />
-    </div>
+    </main>
   );
 }
 

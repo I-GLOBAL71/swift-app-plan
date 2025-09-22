@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSettings } from "@/contexts/SettingsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,87 +9,88 @@ import { toast } from "sonner";
 import { Save, DollarSign } from "lucide-react";
 
 export function PriceSettings() {
-  const [globalPrice, setGlobalPrice] = useState<number>(3000);
-  const [loading, setLoading] = useState(false);
+  const { globalPrice: initialGlobalPrice, loading } = useSettings();
+  const [globalPrice, setGlobalPrice] = useState<number>(initialGlobalPrice);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    loadGlobalPrice();
-  }, []);
+    setGlobalPrice(initialGlobalPrice);
+  }, [initialGlobalPrice]);
 
-  const loadGlobalPrice = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("settings")
-        .select("value")
-        .eq("key", "global_product_price")
-        .single();
+  const applyPriceToProducts = async () => {
+    toast.info("Mise à jour des produits en cours... Veuillez ne pas quitter la page.");
+    
+    const { data: products, error: productsError } = await supabase
+      .from("products")
+      .select("id")
+      .eq("is_premium", false);
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        throw error;
+    if (productsError) throw productsError;
+
+    const productIds = products.map(p => p.id);
+    const batchSize = 100;
+    let updatedCount = 0;
+
+    for (let i = 0; i < productIds.length; i += batchSize) {
+      const batch = productIds.slice(i, i + batchSize);
+      const { error: updateError } = await supabase
+        .from("products")
+        .update({ price: globalPrice })
+        .in("id", batch);
+
+      if (updateError) {
+        throw updateError;
       }
+      
+      updatedCount += batch.length;
+      toast.info(`Mise à jour: ${updatedCount} / ${productIds.length} produits traités.`);
+    }
 
-      if (data?.value) {
-        setGlobalPrice(parseInt(data.value));
-      }
-    } catch (error) {
-      console.error("Error loading global price:", error);
-      toast.error("Erreur lors du chargement du prix global");
-    } finally {
-      setLoading(false);
+    if (productIds.length > 0) {
+        toast.success(`Terminé ! ${productIds.length} produits mis à jour à ${globalPrice.toLocaleString()} FCFA.`);
+    } else {
+        toast.success("Aucun produit à mettre à jour.");
     }
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Sauvegarder le prix global dans les paramètres
       const { error: settingsError } = await supabase
         .from("settings")
-        .upsert({
-          key: "global_product_price",
-          value: globalPrice.toString(),
-          description: "Prix unique appliqué à tous les produits non-premium"
-        });
+        .upsert(
+          {
+            key: "global_product_price",
+            value: globalPrice.toString(),
+            description: "Prix unique appliqué à tous les produits non-premium"
+          },
+          { onConflict: 'key' }
+        );
 
       if (settingsError) throw settingsError;
+      
+      toast.success("Paramètres de prix sauvegardés. Lancement de la mise à jour des produits...");
+      
+      await applyPriceToProducts();
 
-      // Mettre à jour tous les produits non-premium
-      const { error: updateError } = await supabase
-        .from("products")
-        .update({ price: globalPrice })
-        .eq("is_premium", false);
-
-      if (updateError) throw updateError;
-
-      toast.success("Prix global mis à jour avec succès");
     } catch (error) {
       console.error("Error saving global price:", error);
-      toast.error("Erreur lors de la sauvegarde");
+      toast.error("Erreur lors de la sauvegarde des paramètres.");
     } finally {
       setSaving(false);
     }
   };
 
   const applyPriceNow = async () => {
-    if (!confirm("Êtes-vous sûr de vouloir appliquer ce prix à tous les produits non-premium ?")) {
+    if (!confirm("Êtes-vous sûr de vouloir appliquer ce prix à tous les produits non-premium ? Cette action est irréversible.")) {
       return;
     }
-
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("products")
-        .update({ price: globalPrice })
-        .eq("is_premium", false);
-
-      if (error) throw error;
-
-      toast.success(`Prix ${globalPrice.toLocaleString()} FCFA appliqué à tous les produits non-premium`);
+      await applyPriceToProducts();
     } catch (error) {
       console.error("Error applying price:", error);
-      toast.error("Erreur lors de l'application du prix");
+      toast.error("Erreur lors de l'application du prix.");
     } finally {
       setSaving(false);
     }

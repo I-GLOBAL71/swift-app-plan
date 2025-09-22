@@ -74,6 +74,45 @@ export type Database = {
         }
         Relationships: []
       }
+      hero_slides: {
+        Row: {
+          button_link: string | null
+          button_text: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          order_index: number
+          subtitle: string | null
+          title: string
+        }
+        Insert: {
+          button_link?: string | null
+          button_text?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          order_index?: number
+          subtitle?: string | null
+          title: string
+        }
+        Update: {
+          button_link?: string | null
+          button_text?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          order_index?: number
+          subtitle?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string

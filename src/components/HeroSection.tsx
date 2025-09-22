@@ -1,11 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Star } from "lucide-react";
 import heroImage from "@/assets/hero-banner.jpg";
+import { useSettings } from "@/contexts/SettingsContext";
 
 const HeroSection = () => {
+  const { globalPrice } = useSettings();
+
   return (
     <section className="relative min-h-[70vh] flex items-center">
-      <div 
+      <div
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${heroImage})` }}
       >
@@ -31,7 +34,7 @@ const HeroSection = () => {
           </h1>
           
           <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-            Tous nos produits à prix unique de <strong className="text-primary">3000 FCFA</strong>. 
+            Tous nos produits à prix unique de <strong className="text-primary">{globalPrice.toLocaleString()} FCFA</strong>.
             Une expérience d'achat simplifiée pour tous.
           </p>
           
@@ -45,7 +48,7 @@ const HeroSection = () => {
             </Button>
           </div>
           
-          <div className="mt-12 flex items-center gap-8">
+          <div className="mt-12 hidden md:flex items-center gap-8">
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">100+</div>
               <div className="text-sm text-muted-foreground">Produits</div>

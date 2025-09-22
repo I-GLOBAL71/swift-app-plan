@@ -3,29 +3,25 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ShoppingCart } from "lucide-react";
 import { ProductImageCarousel } from "./ProductImageCarousel";
-import { addToCart } from "./CartButton";
+import { useCart } from "@/contexts/CartContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "./ui/use-toast";
 
+import { Tables } from "@/integrations/supabase/types";
+
 interface ProductCardProps {
-  product: {
-    id: string;
-    title: string;
-    description: string;
-    price: number;
-    image_url: string[] | string | null;
-    is_premium: boolean;
-    keywords: string[];
-    synonyms: string[];
-    is_active: boolean;
-    created_at: string;
-  };
+  product: Tables<"products">;
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const navigate = useNavigate();
+  const { addToCart } = useCart();
   const { toast } = useToast();
-  const images = Array.isArray(product.image_url) ? product.image_url : [product.image_url].filter(Boolean);
+  
+  const images: string[] = (Array.isArray(product.image_url)
+    ? product.image_url.filter((i): i is string => typeof i === 'string')
+    : (typeof product.image_url === 'string' ? [product.image_url] : [])
+  );
 
   const handleProductClick = () => {
     navigate(`/product/${product.id}`);
@@ -33,13 +29,15 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation(); // Empêche la navigation vers la page produit
-    addToCart({
-      id: product.id,
-      title: product.title,
-      price: product.price,
-      image_url: product.image_url || '',
-      is_premium: product.is_premium
-    });
+    
+    const productForCart = {
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        image_url: images.length > 0 ? images : null,
+    };
+
+    addToCart(productForCart, 1);
     toast({
       title: "Produit ajouté !",
       description: `${product.title} a été ajouté au panier`,
@@ -69,7 +67,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           </div>
           
           <p className="text-sm text-muted-foreground line-clamp-2">
-            {product.description}
+            {product.description || ""}
           </p>
           
           <div className="flex items-center justify-between">

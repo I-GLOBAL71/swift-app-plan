@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSettings } from "@/contexts/SettingsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ interface RewrittenContent {
 }
 
 export function AlibabaImporter() {
+  const { globalPrice } = useSettings();
   const [url, setUrl] = useState("");
   const [scrapedProduct, setScrapedProduct] = useState<ScrapedProduct | null>(null);
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
@@ -51,7 +53,7 @@ export function AlibabaImporter() {
   const [productFormData, setProductFormData] = useState<ProductFormData>({
     title: "",
     description: "",
-    price: 3000,
+    price: globalPrice,
     isPremium: false,
     variants: [],
     selectedImages: []
@@ -127,7 +129,7 @@ export function AlibabaImporter() {
 
     const selectedImages = productImages.filter(img => img.selected).map(img => img.url);
     const priceMatch = scrapedProduct.price.match(/[\d,]+/);
-    const estimatedPrice = priceMatch ? parseInt(priceMatch[0].replace(/,/g, '')) * 500 : 3000;
+    const estimatedPrice = priceMatch ? parseInt(priceMatch[0].replace(/,/g, '')) * 500 : globalPrice;
 
     setProductFormData({
       title: rewrittenContent.title || scrapedProduct.title,
@@ -171,7 +173,7 @@ export function AlibabaImporter() {
       setProductFormData({
         title: "",
         description: "",
-        price: 3000,
+        price: globalPrice,
         isPremium: false,
         variants: [],
         selectedImages: []

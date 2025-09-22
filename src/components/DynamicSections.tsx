@@ -161,8 +161,9 @@ const DynamicSections = () => {
 
         <div className="text-center mt-12">
           <Button 
-            variant={section.style_type === "premium" ? "premium" : "outline"} 
+            variant={section.style_type === "premium" ? "premium" : "outline"}
             size="lg"
+            className="w-full sm:w-auto"
           >
             {section.show_premium_only 
               ? "Explorer la collection Premium"

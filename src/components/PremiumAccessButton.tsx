@@ -56,8 +56,7 @@ const PremiumAccessButton = () => {
             {/* CTA Button */}
             <Button
               onClick={handleClick}
-              size="xl"
-              className="group bg-gradient-premium hover:shadow-premium border-0 text-premium-foreground font-bold px-8 py-4 text-lg transition-all duration-300 hover:scale-105"
+              className="group bg-gradient-premium hover:shadow-premium border-0 text-premium-foreground font-bold transition-all duration-300 hover:scale-105 w-full sm:w-auto h-16 rounded-lg px-16 sm:px-20 text-lg"
             >
               <Crown className="w-6 h-6 mr-3" />
               Explorer la Collection Premium

@@ -11,27 +11,34 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ProductDetail from "./pages/ProductDetail";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import OrderTracking from "./pages/OrderTracking";
+import Layout from "./components/Layout";
+import { SettingsProvider } from "./contexts/SettingsContext";
+import { CartProvider } from "./contexts/CartContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/premium" element={<PremiumProducts />} />
-          <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/order-confirmation" element={<OrderConfirmation />} />
-          <Route path="/order-tracking" element={<OrderTracking />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <SettingsProvider>
+        <CartProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Layout><Index /></Layout>} />
+              <Route path="/premium" element={<Layout><PremiumProducts /></Layout>} />
+              <Route path="/product/:id" element={<Layout><ProductDetail /></Layout>} />
+              <Route path="/order-confirmation" element={<Layout><OrderConfirmation /></Layout>} />
+              <Route path="/order-tracking" element={<Layout><OrderTracking /></Layout>} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<Layout><NotFound /></Layout>} />
+            </Routes>
+          </BrowserRouter>
+        </CartProvider>
+      </SettingsProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

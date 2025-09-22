@@ -1,14 +1,16 @@
 import ProductCard from "./ProductCard";
 import { Button } from "@/components/ui/button";
 import { Crown, Package } from "lucide-react";
+import { useSettings } from "@/contexts/SettingsContext";
 
 const ProductGrid = () => {
+  const { globalPrice } = useSettings();
   const standardProducts = [
-    { 
+    {
       id: "1",
       title: "Sac à main artisanal en cuir",
       description: "Magnifique sac en cuir artisanal",
-      price: 3000,
+      price: globalPrice,
       image_url: null,
       is_premium: false,
       keywords: [],
@@ -21,7 +23,7 @@ const ProductGrid = () => {
       id: "2",
       title: "Collier traditionnel en perles",
       description: "Collier traditionnel fait à la main",
-      price: 3000,
+      price: globalPrice,
       image_url: null,
       is_premium: false,
       keywords: [],
@@ -34,7 +36,7 @@ const ProductGrid = () => {
       id: "3",
       title: "Bracelet en bois sculpté",
       description: "Bracelet artisanal en bois sculpté",
-      price: 3000,
+      price: globalPrice,
       image_url: null,
       is_premium: false,
       keywords: [],
@@ -47,7 +49,7 @@ const ProductGrid = () => {
       id: "4",
       title: "Écharpe en tissu africain",
       description: "Écharpe colorée en tissu traditionnel",
-      price: 3000,
+      price: globalPrice,
       image_url: null,
       is_premium: false,
       keywords: [],
@@ -60,7 +62,7 @@ const ProductGrid = () => {
       id: "5",
       title: "Boucles d'oreilles en bronze",
       description: "Élégantes boucles d'oreilles en bronze",
-      price: 3000,
+      price: globalPrice,
       image_url: null,
       is_premium: false,
       keywords: [],
@@ -73,7 +75,7 @@ const ProductGrid = () => {
       id: "6",
       title: "Porte-monnaie en raphia",
       description: "Petit porte-monnaie en raphia tressé",
-      price: 3000,
+      price: globalPrice,
       image_url: null,
       is_premium: false,
       keywords: [],
@@ -86,7 +88,7 @@ const ProductGrid = () => {
       id: "7",
       title: "Chaussures en cuir naturel",
       description: "Chaussures confortables en cuir",
-      price: 3000,
+      price: globalPrice,
       image_url: null,
       is_premium: false,
       keywords: [],
@@ -99,7 +101,7 @@ const ProductGrid = () => {
       id: "8",
       title: "Ceinture artisanale",
       description: "Belle ceinture faite à la main",
-      price: 3000,
+      price: globalPrice,
       image_url: null,
       is_premium: false,
       keywords: [],
@@ -164,18 +166,18 @@ const ProductGrid = () => {
             </h2>
           </div>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Découvrez notre sélection de produits de qualité, tous au même prix accessible de 3000 FCFA
+            Découvrez notre sélection de produits de qualité, tous au même prix accessible de {globalPrice.toLocaleString()} FCFA
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {standardProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
         
         <div className="text-center mt-12">
-          <Button variant="outline" size="lg">
+          <Button variant="outline" size="lg" className="w-full sm:w-auto">
             Voir tous les produits
           </Button>
         </div>
@@ -195,14 +197,14 @@ const ProductGrid = () => {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
           {premiumProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
         
         <div className="text-center">
-          <Button variant="premium" size="lg">
+          <Button variant="premium" size="lg" className="w-full sm:w-auto">
             Explorer la collection Premium
           </Button>
         </div>

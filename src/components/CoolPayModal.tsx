@@ -1,71 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, CreditCard, Phone } from 'lucide-react';
 
 interface CoolPayModalProps {
   isOpen: boolean;
   onClose: () => void;
-  amount: number;
+  amount: number; // This is sub-total
+  shippingFee: number;
   onSuccess: (transactionId: string) => void;
-  orderData?: {
-    items: Array<{
-      product_id: string;
-      quantity: number;
-      price: number;
-    }>;
-    customer_name: string;
-    customer_phone: string;
-    customer_email?: string;
-    city_id: string;
-  };
+  orderId: string | null;
 }
 
-interface City {
-  id: string;
-  name: string;
-  shipping_fee: number;
-  payment_required_before_shipping: boolean;
-}
-
-export function CoolPayModal({ isOpen, onClose, amount, onSuccess, orderData }: CoolPayModalProps) {
+export function CoolPayModal({ isOpen, onClose, amount, shippingFee, onSuccess, orderId }: CoolPayModalProps) {
   const [loading, setLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'mobile' | 'card'>('mobile');
-  const [cities, setCities] = useState<City[]>([]);
-  const [selectedCity, setSelectedCity] = useState<string>('');
   const [coolPaySettings, setCoolPaySettings] = useState<{
     publicKey: string;
     environment: string;
   }>({ publicKey: '', environment: 'sandbox' });
   const { toast } = useToast();
 
+  const totalAmount = amount + shippingFee;
+
   useEffect(() => {
     if (isOpen) {
-      loadCities();
       loadCoolPaySettings();
+      // Pre-fill phone number from checkout form
+      if (orderId) {
+        // You can fetch customer phone from order if needed, but for now we remove the dependency on orderData
+      }
     }
-  }, [isOpen]);
-
-  const loadCities = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('cameroon_cities')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      setCities(data || []);
-    } catch (error) {
-      console.error('Error loading cities:', error);
-    }
-  };
+  }, [isOpen, orderId]);
 
   const loadCoolPaySettings = async () => {
     try {
@@ -88,14 +60,8 @@ export function CoolPayModal({ isOpen, onClose, amount, onSuccess, orderData }: 
     }
   };
 
-  const calculateTotal = () => {
-    const selectedCityData = cities.find(c => c.id === selectedCity);
-    const shippingFee = selectedCityData?.shipping_fee || 0;
-    return amount + shippingFee;
-  };
-
-  const formatPrice = (priceInCents: number) => {
-    return (priceInCents / 100).toLocaleString('fr-FR') + ' XAF';
+  const formatPrice = (price: number) => {
+    return price.toLocaleString('fr-FR') + ' FCFA';
   };
 
   const handlePayment = async () => {
@@ -117,82 +83,39 @@ export function CoolPayModal({ isOpen, onClose, amount, onSuccess, orderData }: 
       return;
     }
 
-    if (!selectedCity) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner votre ville",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
 
     try {
       // Simulate CoolPay API call
-      // In a real implementation, you would integrate with the actual CoolPay API
-      const paymentData = {
-        amount: calculateTotal(),
-        currency: 'XAF',
-        payment_method: paymentMethod,
-        phone_number: paymentMethod === 'mobile' ? phoneNumber : undefined,
-        public_key: coolPaySettings.publicKey,
-        environment: coolPaySettings.environment,
-        metadata: {
-          order_data: orderData,
-          city_id: selectedCity
-        }
-      };
-
-      // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // For demo purposes, we'll simulate a successful payment
       const mockTransactionId = `coolpay_${Date.now()}`;
 
-      // Create order in database if orderData is provided
-      if (orderData) {
-        const selectedCityData = cities.find(c => c.id === selectedCity);
-        
-        const { data: orderResult, error: orderError } = await supabase
+      if (orderId) {
+        // Update order status to 'paid'
+        const { error: updateError } = await supabase
           .from('orders')
-          .insert([{
-            customer_name: orderData.customer_name,
-            customer_phone: orderData.customer_phone,
-            customer_email: orderData.customer_email,
-            total_amount: calculateTotal(),
+          .update({
             status: 'paid',
-            notes: `Paiement CoolPay: ${mockTransactionId}, Ville: ${selectedCityData?.name}`
-          }])
-          .select('id')
-          .single();
+            notes: `Paiement CoolPay réussi: ${mockTransactionId}`
+          })
+          .eq('id', orderId);
 
-        if (orderError) throw orderError;
+        if (updateError) throw updateError;
 
-        // Create order items
-        if (orderResult) {
-          const orderItems = orderData.items.map(item => ({
-            order_id: orderResult.id,
-            product_id: item.product_id,
-            quantity: item.quantity,
-            price: item.price
-          }));
-
-          const { error: itemsError } = await supabase
-            .from('order_items')
-            .insert(orderItems);
-
-          if (itemsError) throw itemsError;
-        }
+        toast({
+          title: "Paiement réussi !",
+          description: "Votre commande a été confirmée",
+        });
+  
+        onSuccess(mockTransactionId);
+        onClose();
+      } else {
+        toast({
+          title: "Erreur de paiement",
+          description: "ID de commande manquant.",
+          variant: "destructive",
+        });
       }
-
-      toast({
-        title: "Paiement réussi !",
-        description: "Votre commande a été confirmée",
-      });
-
-      onSuccess(mockTransactionId);
-      onClose();
     } catch (error) {
       console.error('Payment error:', error);
       toast({
@@ -205,116 +128,95 @@ export function CoolPayModal({ isOpen, onClose, amount, onSuccess, orderData }: 
     }
   };
 
-  const selectedCityData = cities.find(c => c.id === selectedCity);
-
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CreditCard className="w-5 h-5" />
-            Paiement CoolPay
-          </DialogTitle>
-        </DialogHeader>
+    <ResponsiveDialog open={isOpen} onOpenChange={onClose} className="sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <CreditCard className="w-5 h-5" />
+          Paiement en ligne
+        </DialogTitle>
+      </DialogHeader>
 
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="city">Ville de livraison *</Label>
-            <Select value={selectedCity} onValueChange={setSelectedCity}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionnez votre ville" />
-              </SelectTrigger>
-              <SelectContent>
-                {cities.map((city) => (
-                  <SelectItem key={city.id} value={city.id}>
-                    {city.name} - {formatPrice(city.shipping_fee)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <div className="space-y-4">
+        <div className="p-3 bg-muted rounded-lg">
+          <div className="flex justify-between text-sm">
+            <span>Sous-total :</span>
+            <span>{formatPrice(amount)}</span>
           </div>
-
-          {selectedCity && (
-            <div className="p-3 bg-muted rounded-lg">
-              <div className="flex justify-between text-sm">
-                <span>Sous-total :</span>
-                <span>{formatPrice(amount)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Frais de livraison :</span>
-                <span>{formatPrice(selectedCityData?.shipping_fee || 0)}</span>
-              </div>
-              <div className="flex justify-between font-medium border-t mt-2 pt-2">
-                <span>Total :</span>
-                <span>{formatPrice(calculateTotal())}</span>
-              </div>
-            </div>
-          )}
-
-          <div>
-            <Label>Méthode de paiement</Label>
-            <div className="flex gap-2 mt-2">
-              <Button
-                variant={paymentMethod === 'mobile' ? 'default' : 'outline'}
-                onClick={() => setPaymentMethod('mobile')}
-                className="flex-1"
-              >
-                <Phone className="w-4 h-4 mr-2" />
-                Mobile Money
-              </Button>
-              <Button
-                variant={paymentMethod === 'card' ? 'default' : 'outline'}
-                onClick={() => setPaymentMethod('card')}
-                className="flex-1"
-              >
-                <CreditCard className="w-4 h-4 mr-2" />
-                Carte bancaire
-              </Button>
-            </div>
+          <div className="flex justify-between text-sm">
+            <span>Frais de livraison :</span>
+            <span>{formatPrice(shippingFee)}</span>
           </div>
+          <div className="flex justify-between font-medium border-t mt-2 pt-2">
+            <span>Total à payer :</span>
+            <span>{formatPrice(totalAmount)}</span>
+          </div>
+        </div>
 
-          {paymentMethod === 'mobile' && (
-            <div>
-              <Label htmlFor="phone">Numéro de téléphone *</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="Ex: 237678901234"
-                className="mt-1"
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                Format international avec indicatif pays (237 pour le Cameroun)
-              </p>
-            </div>
-          )}
-
-          <div className="flex gap-2">
+        <div>
+          <Label>Méthode de paiement</Label>
+          <div className="flex gap-2 mt-2">
             <Button
-              onClick={handlePayment}
-              disabled={loading || !selectedCity}
+              variant={paymentMethod === 'mobile' ? 'default' : 'outline'}
+              onClick={() => setPaymentMethod('mobile')}
               className="flex-1"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Traitement...
-                </>
-              ) : (
-                `Payer ${selectedCity ? formatPrice(calculateTotal()) : ''}`
-              )}
+              <Phone className="w-4 h-4 mr-2" />
+              Mobile Money
             </Button>
-            <Button variant="outline" onClick={onClose} disabled={loading}>
-              Annuler
+            <Button
+              variant={paymentMethod === 'card' ? 'default' : 'outline'}
+              onClick={() => setPaymentMethod('card')}
+              className="flex-1"
+              disabled
+            >
+              <CreditCard className="w-4 h-4 mr-2" />
+              Carte bancaire (Bientôt)
             </Button>
           </div>
-
-          <p className="text-xs text-muted-foreground text-center">
-            Paiement sécurisé par CoolPay. Vos données sont protégées.
-          </p>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        {paymentMethod === 'mobile' && (
+          <div>
+            <Label htmlFor="phone">Numéro de téléphone de paiement *</Label>
+            <Input
+              id="phone"
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="Ex: 237678901234"
+              className="mt-1"
+            />
+            <p className="text-sm text-muted-foreground mt-1">
+              Utilisé pour le paiement Mobile Money.
+            </p>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button
+            onClick={handlePayment}
+            disabled={loading}
+            className="flex-1"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Traitement...
+              </>
+            ) : (
+              `Payer ${formatPrice(totalAmount)}`
+            )}
+          </Button>
+          <Button variant="outline" onClick={onClose} disabled={loading}>
+            Annuler
+          </Button>
+        </div>
+
+        <p className="text-xs text-muted-foreground text-center">
+          Paiement sécurisé par CoolPay.
+        </p>
+      </div>
+    </ResponsiveDialog>
   );
 }

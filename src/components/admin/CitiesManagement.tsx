@@ -36,7 +36,7 @@ export function CitiesManagement() {
   const [newCity, setNewCity] = useState({
     name: '',
     region: '',
-    shipping_fee: 0,
+    shipping_fee: 2500,
     payment_required_before_shipping: false,
     delivery_days: 3
   });
@@ -93,7 +93,7 @@ export function CitiesManagement() {
       setNewCity({
         name: '',
         region: '',
-        shipping_fee: 0,
+        shipping_fee: 2500,
         payment_required_before_shipping: false,
         delivery_days: 3
       });
@@ -178,9 +178,10 @@ export function CitiesManagement() {
                   <Input
                     id="shipping_fee"
                     type="number"
+                    min="2500"
                     value={newCity.shipping_fee}
-                    onChange={(e) => setNewCity({ ...newCity, shipping_fee: parseInt(e.target.value) || 0 })}
-                    placeholder="Ex: 2000"
+                    onChange={(e) => setNewCity({ ...newCity, shipping_fee: parseInt(e.target.value) || 2500 })}
+                    placeholder="Ex: 2500"
                   />
                 </div>
                 <div>
