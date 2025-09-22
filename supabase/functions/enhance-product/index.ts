@@ -60,8 +60,11 @@ Titre actuel: "${title}"
 Description actuelle: "${description}"
 
 Instructions:
-1. Crée un titre accrocheur et professionnel en français (maximum 80 caractères)
-2. Écris une description détaillée et attractive en français (150-300 mots)
+1. Crée un titre PRÉCIS, CONCIS, ACCROCHEUR et ÉMOTIONNEL en français (maximum 80 caractères) qui suscite l'émotion du visiteur et crée du désir
+2. Écris une description accrocheuse en français avec cette STRUCTURE OBLIGATOIRE:
+   - Commence par une introduction listant exactement 7 points forts et exceptionnels du produit (format: ✓ Point fort 1, ✓ Point fort 2, etc.)
+   - Puis développe une description détaillée et engageante (150-300 mots total)
+   - Utilise un langage commercial attractif qui suscite l'émotion et le désir d'achat
 3. Génère 5-8 mots-clés pertinents en français
 4. Crée 3-5 synonymes ou termes alternatifs en français
 

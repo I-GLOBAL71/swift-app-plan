@@ -19,13 +19,13 @@ const PROMPTS: Prompt[] = [
     key: "prompt_title",
     label: "Réécriture de Titre",
     description: "Prompt pour réécrire les titres de produits",
-    defaultValue: "Réécris ce titre de produit en français de manière attrayante et professionnelle pour un site e-commerce. Le titre doit être accrocheur et optimisé pour le SEO."
+    defaultValue: "Réécris ce titre de produit en français de manière précise, concise, accrocheuse et émotionnelle pour un site e-commerce. Le titre doit susciter l'émotion du visiteur, créer du désir et être optimisé pour le SEO. Maximum 80 caractères."
   },
   {
     key: "prompt_description",
     label: "Réécriture de Description",
     description: "Prompt pour réécrire les descriptions de produits",
-    defaultValue: "Réécris cette description de produit en français de manière détaillée et engageante pour un site e-commerce. Mets en avant les avantages et caractéristiques principales du produit. Utilise un langage commercial attractif."
+    defaultValue: "Réécris cette description de produit en français de manière accrocheuse pour un site e-commerce. STRUCTURE OBLIGATOIRE : Commence par une introduction listant exactement 7 points forts et exceptionnels du produit (format : ✓ Point fort 1, ✓ Point fort 2, etc.), puis développe une description détaillée et engageante. Utilise un langage commercial attractif qui suscite l'émotion et le désir d'achat."
   },
   {
     key: "prompt_keywords",
