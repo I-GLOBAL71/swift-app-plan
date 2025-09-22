@@ -1,7 +1,7 @@
 import Header from "@/components/Header";
-import HeroSection from "@/components/HeroSection";
+import HeroCarousel from "@/components/HeroCarousel";
 import StandardSection from "@/components/StandardSection";
-import PremiumSection from "@/components/PremiumSection";
+import PremiumAccessButton from "@/components/PremiumAccessButton";
 import DynamicSections from "@/components/DynamicSections";
 import Footer from "@/components/Footer";
 
@@ -10,9 +10,11 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main>
-        <HeroSection />
-        <StandardSection />
-        <PremiumSection />
+        <HeroCarousel />
+        <section id="products">
+          <StandardSection />
+        </section>
+        <PremiumAccessButton />
         <DynamicSections />
       </main>
       <Footer />
