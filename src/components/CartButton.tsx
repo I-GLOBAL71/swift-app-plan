@@ -37,7 +37,6 @@ export function CartButton({ className }: CartButtonProps) {
       <CheckoutModal
         isOpen={showCheckout}
         onClose={() => setShowCheckout(false)}
-        cartItems={cartItems}
         onOrderComplete={handleOrderComplete}
       />
     </>

@@ -35,6 +35,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         title: product.title,
         price: product.price,
         image_url: images.length > 0 ? images : null,
+        is_premium: product.is_premium || false,
     };
 
     addToCart(productForCart, 1);

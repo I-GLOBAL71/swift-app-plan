@@ -156,18 +156,22 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
   const handleSubmitOrder = async () => {
     setLoading(true);
     try {
+      // Si paiement CoolPay est sélectionné OU requis pour cette ville
       if (paymentMethod === 'coolpay' || isPaymentRequired) {
         const newOrderId = await createOrder('pending_payment');
         if (newOrderId) {
           setOrderId(newOrderId);
           setShowCoolPayModal(true);
+          // Ne pas finaliser ici - attendre le succès du paiement
         }
       } else {
+        // Seulement pour paiement à la livraison (cash_on_delivery)
         const newOrderId = await createOrder('pending');
         if (newOrderId) {
+          clearCart(); // Vider le panier seulement après confirmation
           toast({
             title: "Commande confirmée !",
-            description: "Votre commande a été enregistrée avec succès.",
+            description: "Votre commande a été enregistrée. Paiement à la livraison.",
           });
           window.location.href = `/order-confirmation?orderId=${newOrderId}`;
           onOrderComplete();
@@ -186,18 +190,44 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
     }
   };
 
-  const handleCoolPaySuccess = (transactionId: string) => {
-    toast({
-      title: "Paiement réussi !",
-      description: `Transaction: ${transactionId}`,
-    });
-    
-    if (orderId) {
-      window.location.href = `/order-confirmation?orderId=${orderId}`;
+  const handleCoolPaySuccess = async (transactionId: string) => {
+    try {
+      // Mettre à jour le statut de la commande à "confirmed" après paiement réussi
+      if (orderId) {
+        const { error } = await supabase
+          .from('orders')
+          .update({ 
+            status: 'confirmed',
+            transaction_id: transactionId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', orderId);
+
+        if (error) {
+          console.error('Error updating order status:', error);
+          throw error;
+        }
+
+        // Vider le panier seulement après paiement confirmé
+        clearCart();
+        
+        toast({
+          title: "Paiement réussi !",
+          description: `Votre commande est confirmée. Transaction: ${transactionId}`,
+        });
+        
+        window.location.href = `/order-confirmation?orderId=${orderId}`;
+        onOrderComplete();
+        onClose();
+      }
+    } catch (error) {
+      console.error('Error confirming payment:', error);
+      toast({
+        title: "Erreur de confirmation",
+        description: "Le paiement a réussi mais la confirmation a échoué. Contactez le support.",
+        variant: "destructive",
+      });
     }
-    
-    onOrderComplete();
-    onClose();
   };
 
 
@@ -399,8 +429,18 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
       <CoolPayModal
         isOpen={showCoolPayModal}
         onClose={() => {
-          setShowCoolPayModal(false);
-          setOrderId(null);
+          // Ne pas permettre la fermeture sans paiement pour les commandes qui nécessitent un paiement
+          if (!isPaymentRequired && paymentMethod === 'cash_on_delivery') {
+            setShowCoolPayModal(false);
+            setOrderId(null);
+          } else {
+            // Pour les paiements obligatoires, afficher un avertissement
+            toast({
+              title: "Paiement requis",
+              description: "Vous devez effectuer le paiement pour finaliser votre commande.",
+              variant: "destructive",
+            });
+          }
         }}
         amount={totalPrice}
         shippingFee={shippingFee}
