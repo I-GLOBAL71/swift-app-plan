@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { CoolPayModal } from './CoolPayModal';
 import { ShoppingCart, MapPin, CreditCard, Truck, Phone, Mail, User } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
@@ -197,8 +197,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
         const { error } = await supabase
           .from('orders')
           .update({ 
-            status: 'confirmed',
-            updated_at: new Date().toISOString()
+            status: 'confirmed'
           })
           .eq('id', orderId);
 
@@ -428,18 +427,8 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
       <CoolPayModal
         isOpen={showCoolPayModal}
         onClose={() => {
-          // Ne pas permettre la fermeture sans paiement pour les commandes qui nécessitent un paiement
-          if (!isPaymentRequired && paymentMethod === 'cash_on_delivery') {
-            setShowCoolPayModal(false);
-            setOrderId(null);
-          } else {
-            // Pour les paiements obligatoires, afficher un avertissement
-            toast({
-              title: "Paiement requis",
-              description: "Vous devez effectuer le paiement pour finaliser votre commande.",
-              variant: "destructive",
-            });
-          }
+          setShowCoolPayModal(false);
+          setOrderId(null);
         }}
         amount={totalPrice}
         shippingFee={shippingFee}

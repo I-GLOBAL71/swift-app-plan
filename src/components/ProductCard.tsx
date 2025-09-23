@@ -5,7 +5,7 @@ import { Sparkles, ShoppingCart } from "lucide-react";
 import { ProductImageCarousel } from "./ProductImageCarousel";
 import { useCart } from "@/contexts/CartContext";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "./ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 import { Tables } from "@/integrations/supabase/types";
 

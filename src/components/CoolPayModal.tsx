@@ -5,7 +5,7 @@ import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Loader2, CreditCard, Phone } from 'lucide-react';
 
 interface CoolPayModalProps {
@@ -91,24 +91,7 @@ export function CoolPayModal({ isOpen, onClose, amount, shippingFee, onSuccess, 
       const mockTransactionId = `coolpay_${Date.now()}`;
 
       if (orderId) {
-        // Update order status to 'paid'
-        const { error: updateError } = await supabase
-          .from('orders')
-          .update({
-            status: 'paid',
-            notes: `Paiement CoolPay réussi: ${mockTransactionId}`
-          })
-          .eq('id', orderId);
-
-        if (updateError) throw updateError;
-
-        toast({
-          title: "Paiement réussi !",
-          description: "Votre commande a été confirmée",
-        });
-  
         onSuccess(mockTransactionId);
-        onClose();
       } else {
         toast({
           title: "Erreur de paiement",
