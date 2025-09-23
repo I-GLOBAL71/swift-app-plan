@@ -8,8 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PriceSettings } from "./PriceSettings";
 import { CoolPaySettings } from "./CoolPaySettings";
 import { ApiSettings } from "./ApiSettings";
+import { PremiumSettings } from "./PremiumSettings";
+import SocialLinksSettings from "./SocialLinksSettings";
 import { toast } from "sonner";
-import { Save, Settings, DollarSign, Palette } from "lucide-react";
+import { Save, Settings, DollarSign, Palette, Star, Share2 } from "lucide-react";
 
 interface Settings {
   site_name?: string;
@@ -95,7 +97,7 @@ export function SettingsManagement() {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             Général
@@ -111,6 +113,14 @@ export function SettingsManagement() {
           <TabsTrigger value="coolpay" className="flex items-center gap-2">
             <DollarSign className="h-4 w-4" />
             CoolPay
+          </TabsTrigger>
+          <TabsTrigger value="premium" className="flex items-center gap-2">
+            <Star className="h-4 w-4" />
+            Premium
+          </TabsTrigger>
+          <TabsTrigger value="social" className="flex items-center gap-2">
+            <Share2 className="h-4 w-4" />
+            Réseaux Sociaux
           </TabsTrigger>
         </TabsList>
 
@@ -174,6 +184,25 @@ export function SettingsManagement() {
           </TabsContent>
         <TabsContent value="coolpay">
           <CoolPaySettings />
+        </TabsContent>
+        <TabsContent value="premium">
+          <PremiumSettings />
+        </TabsContent>
+        <TabsContent value="social">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Share2 className="h-5 w-5" />
+                Liens des Réseaux Sociaux
+              </CardTitle>
+              <CardDescription>
+                Gérez les liens vers vos pages de réseaux sociaux.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SocialLinksSettings />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

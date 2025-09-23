@@ -211,6 +211,36 @@ export type Database = {
           },
         ]
       }
+      product_relations: {
+        Row: {
+          product_id: string
+          similar_product_id: string
+        }
+        Insert: {
+          product_id: string
+          similar_product_id: string
+        }
+        Update: {
+          product_id?: string
+          similar_product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_relations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_relations_similar_product_id_fkey"
+            columns: ["similar_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           created_at: string
@@ -221,6 +251,8 @@ export type Database = {
           is_premium: boolean | null
           keywords: string[] | null
           price: number
+          similar_products_type: Database["public"]["Enums"]["similar_products_mode"]
+          slug: string
           synonyms: string[] | null
           title: string
           updated_at: string
@@ -234,6 +266,8 @@ export type Database = {
           is_premium?: boolean | null
           keywords?: string[] | null
           price?: number
+          similar_products_type?: Database["public"]["Enums"]["similar_products_mode"]
+          slug?: string
           synonyms?: string[] | null
           title: string
           updated_at?: string
@@ -247,6 +281,8 @@ export type Database = {
           is_premium?: boolean | null
           keywords?: string[] | null
           price?: number
+          similar_products_type?: Database["public"]["Enums"]["similar_products_mode"]
+          slug?: string
           synonyms?: string[] | null
           title?: string
           updated_at?: string
@@ -328,6 +364,27 @@ export type Database = {
         }
         Relationships: []
       }
+      social_links: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -339,7 +396,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      similar_products_mode: "auto" | "manual"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -466,6 +523,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      similar_products_mode: ["auto", "manual"],
+    },
   },
 } as const

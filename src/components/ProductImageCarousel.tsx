@@ -7,6 +7,7 @@ interface ProductImageCarouselProps {
   images: string[];
   productName: string;
   className?: string;
+  onSwipe?: () => void;
 }
 
 interface SwipeableCarouselContentProps {
@@ -14,9 +15,10 @@ interface SwipeableCarouselContentProps {
   productName: string;
   currentImageIndex: number;
   setCurrentImageIndex: (index: number) => void;
+  onSwipe?: () => void;
 }
 
-function SwipeableCarouselContent({ images, productName, currentImageIndex, setCurrentImageIndex }: SwipeableCarouselContentProps) {
+function SwipeableCarouselContent({ images, productName, currentImageIndex, setCurrentImageIndex, onSwipe }: SwipeableCarouselContentProps) {
   const { api, scrollPrev, scrollNext } = useCarousel();
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
@@ -40,10 +42,15 @@ function SwipeableCarouselContent({ images, productName, currentImageIndex, setC
 
     if (isLeftSwipe) {
       scrollNext();
+      onSwipe?.();
     } else if (isRightSwipe) {
       scrollPrev();
+      onSwipe?.();
     }
-  }, [scrollNext, scrollPrev, minSwipeDistance]);
+
+    touchStartX.current = 0;
+    touchEndX.current = 0;
+  }, [scrollNext, scrollPrev, minSwipeDistance, onSwipe]);
 
   useEffect(() => {
     if (!api) return;
@@ -118,7 +125,7 @@ function SwipeableCarouselContent({ images, productName, currentImageIndex, setC
   );
 }
 
-export function ProductImageCarousel({ images, productName, className }: ProductImageCarouselProps) {
+export function ProductImageCarousel({ images, productName, className, onSwipe }: ProductImageCarouselProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   if (!images || images.length === 0) {
@@ -152,6 +159,7 @@ export function ProductImageCarousel({ images, productName, className }: Product
           productName={productName}
           currentImageIndex={currentImageIndex}
           setCurrentImageIndex={setCurrentImageIndex}
+          onSwipe={onSwipe}
         />
       </Carousel>
     </div>

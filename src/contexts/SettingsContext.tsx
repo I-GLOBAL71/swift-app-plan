@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface SettingsContextType {
   globalPrice: number;
+  premiumSectionFrequency: number;
   loading: boolean;
 }
 
@@ -10,36 +11,41 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [globalPrice, setGlobalPrice] = useState<number>(3000);
+  const [premiumSectionFrequency, setPremiumSectionFrequency] = useState<number>(5);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchGlobalPrice = async () => {
+    const fetchSettings = async () => {
       try {
-        const { data, error } = await supabase
-          .from('settings')
-          .select('value')
-          .eq('key', 'global_product_price')
-          .single();
+        const { data, error } = await supabase.from('settings').select('key,value');
 
-        if (error && error.code !== 'PGRST116') { // Ignore "no rows found" error
+        if (error) {
           throw error;
         }
 
-        if (data?.value) {
-          setGlobalPrice(parseInt(data.value, 10));
+        if (data) {
+          const globalPriceSetting = data.find(s => s.key === 'global_product_price');
+          if (globalPriceSetting?.value) {
+            setGlobalPrice(parseInt(globalPriceSetting.value, 10));
+          }
+
+          const premiumSectionFrequencySetting = data.find(s => s.key === 'premium_section_frequency');
+          if (premiumSectionFrequencySetting?.value) {
+            setPremiumSectionFrequency(parseInt(premiumSectionFrequencySetting.value, 10));
+          }
         }
       } catch (error) {
-        console.error('Error fetching global price:', error);
+        console.error('Error fetching settings:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchGlobalPrice();
+    fetchSettings();
   }, []);
 
   return (
-    <SettingsContext.Provider value={{ globalPrice, loading }}>
+    <SettingsContext.Provider value={{ globalPrice, premiumSectionFrequency, loading }}>
       {children}
     </SettingsContext.Provider>
   );

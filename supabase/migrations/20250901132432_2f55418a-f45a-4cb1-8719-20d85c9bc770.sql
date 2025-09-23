@@ -8,7 +8,7 @@ RETURNS BOOLEAN AS $$
     SELECT 1 FROM public.admin_users 
     WHERE user_id = user_uuid AND is_active = true
   );
-$$ LANGUAGE SQL SECURITY DEFINER STABLE SET search_path = public;
+$$ LANGUAGE SQL SECURITY INVOKER STABLE SET search_path = public;
 
 -- Créer les nouvelles politiques utilisant la fonction sécurisée
 CREATE POLICY "Admin users can manage admin users" 

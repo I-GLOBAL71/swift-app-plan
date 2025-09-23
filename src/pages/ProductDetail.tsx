@@ -1,26 +1,17 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ProductImageCarousel } from "@/components/ProductImageCarousel";
+import { ProductImageGallery } from "@/components/ProductImageGallery";
 import { ArrowLeft, ShoppingCart, Heart, Share2, Sparkles, Star } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/contexts/CartContext";
+import ProductCard from "@/components/ProductCard";
 
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  image_url: string[] | null;
-  is_premium: boolean;
-  keywords: string[];
-  synonyms: string[];
-  is_active: boolean;
-  created_at: string;
-}
+type Product = Tables<'products'>;
 
 export function ProductDetail() {
   const { id } = useParams();
@@ -30,6 +21,7 @@ export function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<string>("");
+  const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     loadProduct();
@@ -37,17 +29,19 @@ export function ProductDetail() {
 
   const loadProduct = async () => {
     if (!id) return;
-    
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select("*, slug")
         .eq("id", id)
         .eq("is_active", true)
         .single();
 
       if (error) throw error;
-      setProduct(data as Product);
+      const loadedProduct = data as Product;
+      setProduct(loadedProduct);
+      loadSimilarProducts(loadedProduct);
     } catch (error) {
       console.error("Error loading product:", error);
       toast.error("Produit non trouvé");
@@ -57,9 +51,67 @@ export function ProductDetail() {
     }
   };
 
+  const loadSimilarProducts = async (currentProduct: Product) => {
+    if (!currentProduct) return;
+
+    try {
+      let similar: Product[] = [];
+      if (currentProduct.similar_products_type === 'manual') {
+        const { data: relations, error: relationsError } = await supabase
+          .from('product_relations')
+          .select('similar_product_id')
+          .eq('product_id', currentProduct.id);
+
+        if (relationsError) throw relationsError;
+
+        const similarIds = relations.map(r => r.similar_product_id);
+        if (similarIds.length > 0) {
+          const { data: products, error: productsError } = await supabase
+            .from('products')
+            .select('*, slug, similar_products_type')
+            .in('id', similarIds)
+            .eq('is_active', true)
+            .limit(4);
+          
+          if (productsError) throw productsError;
+          similar = products as Product[];
+        }
+      } else { // 'auto' mode
+        if (currentProduct.keywords && currentProduct.keywords.length > 0) {
+          const { data, error } = await supabase
+            .from('products')
+            .select('*, slug, similar_products_type')
+            .overlaps('keywords', currentProduct.keywords)
+            .not('id', 'eq', currentProduct.id)
+            .eq('is_active', true)
+            .limit(4);
+
+          if (error) throw error;
+          similar = data as Product[];
+        }
+      }
+      setSimilarProducts(similar);
+    } catch (error) {
+      console.error("Error loading similar products:", error);
+      // Ne pas afficher de toast pour cette erreur, ce n'est pas critique
+    }
+  };
+
   const handleAddToCart = () => {
     if (product) {
-      addToCart(product, quantity);
+      const images: string[] = (Array.isArray(product.image_url)
+        ? product.image_url.filter((i): i is string => typeof i === 'string')
+        : (typeof product.image_url === 'string' ? [product.image_url] : [])
+      );
+
+      const productForCart = {
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        image_url: images.length > 0 ? images : null,
+        is_premium: product.is_premium || false,
+      };
+      addToCart(productForCart, quantity);
     }
   };
 
@@ -105,8 +157,10 @@ export function ProductDetail() {
     );
   }
 
-  const images = Array.isArray(product.image_url) ? product.image_url : 
-                 (product.image_url ? [product.image_url as string] : []);
+  const images: string[] = (Array.isArray(product.image_url)
+    ? product.image_url.filter((i): i is string => typeof i === 'string')
+    : (typeof product.image_url === 'string' ? [product.image_url] : [])
+  );
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -124,10 +178,9 @@ export function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Images du produit */}
           <div className="space-y-4">
-            <ProductImageCarousel 
-              images={images} 
+            <ProductImageGallery
+              images={images}
               productName={product.title}
-              className="aspect-square"
             />
           </div>
 
@@ -255,22 +308,17 @@ export function ProductDetail() {
         {/* Section produits similaires */}
         <div className="mt-16">
           <h2 className="text-2xl font-bold mb-6">Produits similaires</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {/* Placeholder pour les produits similaires */}
-            {[1, 2, 3, 4].map((item) => (
-              <Card key={item} className="group cursor-pointer hover:shadow-lg transition-shadow">
-                <CardContent className="p-4">
-                  <div className="bg-muted rounded-lg h-32 mb-3"></div>
-                  <h3 className="font-medium mb-2">Produit similaire {item}</h3>
-                  <p className="text-sm text-muted-foreground mb-2">Description courte du produit</p>
-                  <p className="font-bold text-primary">25 000 FCFA</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {similarProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {similarProducts.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-center py-8">Aucun produit similaire trouvé pour le moment.</p>
+          )}
         </div>
     </main>
   );
 }
-
 export default ProductDetail;

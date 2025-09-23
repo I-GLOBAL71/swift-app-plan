@@ -89,28 +89,27 @@ const PremiumProducts = () => {
                 <Sparkles className="w-6 h-6 text-accent absolute -top-1 -right-1 animate-pulse-soft" />
               </div>
               <h1 className="text-5xl md:text-7xl font-bold bg-gradient-premium bg-clip-text text-transparent">
-                Collection Premium
+                Nos Gadgets Premium
               </h1>
             </div>
             
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-8">
-              Découvrez nos pièces d'exception, conçues avec les meilleurs matériaux et un savoir-faire artisanal unique.
-              Chaque produit raconte une histoire d'excellence et d'authenticité.
+              Découvrez nos gadgets exceptionnels, une sélection de produits uniques dont les prix dépassent 3,000 FCFA. Profitez des prix les plus compétitifs du marché.
             </p>
 
             {/* Premium Benefits */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
               <div className="flex items-center justify-center gap-3 p-6 rounded-2xl bg-card/50 border border-premium/20 shadow-premium">
                 <Star className="w-8 h-8 text-premium" />
-                <span className="font-bold text-lg text-foreground">Qualité Exceptionnelle</span>
+                <span className="font-bold text-lg text-foreground">Gadgets Exceptionnels</span>
               </div>
               <div className="flex items-center justify-center gap-3 p-6 rounded-2xl bg-card/50 border border-premium/20 shadow-premium">
                 <Crown className="w-8 h-8 text-premium" />
-                <span className="font-bold text-lg text-foreground">Édition Limitée</span>
+                <span className="font-bold text-lg text-foreground">Prix {'>'} 3,000 FCFA</span>
               </div>
               <div className="flex items-center justify-center gap-3 p-6 rounded-2xl bg-card/50 border border-premium/20 shadow-premium">
                 <Sparkles className="w-8 h-8 text-premium" />
-                <span className="font-bold text-lg text-foreground">Fait Main</span>
+                <span className="font-bold text-lg text-foreground">Meilleurs Prix Garantis</span>
               </div>
             </div>
           </div>
@@ -126,7 +125,7 @@ const PremiumProducts = () => {
                 <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Rechercher un produit premium..."
+                  placeholder="Rechercher un gadget premium..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 w-80"
@@ -200,12 +199,15 @@ const PremiumProducts = () => {
                 }
               </p>
               {searchTerm && (
-                <Button
-                  variant="outline"
-                  onClick={() => setSearchTerm("")}
-                >
-                  Effacer la recherche
-                </Button>
+                <div className="flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => setSearchTerm("")}
+                    className="mx-auto"
+                  >
+                    Effacer la recherche
+                  </Button>
+                </div>
               )}
             </div>
           )}

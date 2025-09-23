@@ -1,0 +1,402 @@
+
+---
+
+Guide d’intégration My-CoolPay → Paiement dans un popup/modal
+
+> Remplace YOUR_PUBLIC_KEY, YOUR_PRIVATE_KEY, YOUR_CALLBACK_URL, et YOUR_SITE_URL par tes valeurs.
+
+
+
+
+---
+
+1) Variables d’environnement (exemple)
+
+MYCOOLPAY_PUBLIC_KEY=pk_test_XXXXXXXX
+MYCOOLPAY_PRIVATE_KEY=sk_test_YYYYYYYY
+MYCOOLPAY_API_BASE=https://api.my-coolpay.com   # ajuster si diffère
+CALLBACK_URL=https://your-site.com/api/callback/mycoolpay
+SITE_URL=https://your-site.com
+PORT=3000
+
+
+---
+
+2) Exemple de flux résumé (ce que le code va faire)
+
+1. Front-end demande la création d’une transaction (via ton backend).
+
+
+2. Backend appelle /paylink (ou /payin) de My-CoolPay, reçoit payment_url et transaction_ref.
+
+
+3. Front-end ouvre un popup/modal (iframe si possible, sinon window.open) vers payment_url.
+
+
+4. Backend écoute le callback (webhook) de My-CoolPay à CALLBACK_URL et met à jour DB.
+
+
+5. Front-end surveille le statut via polling checkStatus ou attend message postMessage depuis popup. À succès/échec : ferme popup et affiche résultat.
+
+
+
+
+---
+
+3) Exemple curl (création de paylink)
+
+curl -X POST "https://api.my-coolpay.com/api/YOUR_PUBLIC_KEY/paylink" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 1500,
+    "currency": "XAF",
+    "reason": "Commande #1234",
+    "reference": "ORDER_1234",
+    "customer": {
+      "name": "Fabrice Tchuite",
+      "phone": "+2376XXXXXXXX",
+      "email": "client@example.com"
+    },
+    "callback_url": "https://your-site.com/api/callback/mycoolpay",
+    "success_url": "https://your-site.com/payment/success",
+    "cancel_url": "https://your-site.com/payment/cancel"
+  }'
+
+Réponse attendue : JSON contenant payment_url, transaction_ref, status: PENDING ou équivalent.
+
+
+---
+
+4) Backend Node.js / Express — endpoints essentiels
+
+Crée server.js :
+
+// server.js
+require('dotenv').config();
+const express = require('express');
+const axios = require('axios');
+const crypto = require('crypto');
+const bodyParser = require('body-parser');
+
+const app = express();
+app.use(bodyParser.json());
+
+const PUBLIC_KEY = process.env.MYCOOLPAY_PUBLIC_KEY;
+const PRIVATE_KEY = process.env.MYCOOLPAY_PRIVATE_KEY;
+const API_BASE = process.env.MYCOOLPAY_API_BASE || 'https://api.my-coolpay.com';
+const CALLBACK_SECRET = PRIVATE_KEY; // pour signature md5 selon doc
+
+// --- Helper: call mycoolpay paylink ---
+async function createPaylink(payload) {
+  const url = `${API_BASE}/api/${PUBLIC_KEY}/paylink`;
+  const res = await axios.post(url, payload, { headers: { 'Content-Type': 'application/json' } });
+  return res.data;
+}
+
+// --- Create transaction endpoint (called by client) ---
+app.post('/api/create-payment', async (req, res) => {
+  try {
+    const { amount, currency, reference, customer, reason } = req.body;
+
+    const payload = {
+      amount,
+      currency,
+      reference,
+      reason,
+      customer,
+      callback_url: process.env.CALLBACK_URL,
+      success_url: `${process.env.SITE_URL}/payment/success`,
+      cancel_url: `${process.env.SITE_URL}/payment/cancel`
+    };
+
+    const result = await createPaylink(payload);
+    // Save transaction in DB: reference, transaction_ref, status=PENDING, etc.
+    // For demo we return the result to client
+    return res.json(result);
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    return res.status(500).json({ error: 'Erreur création paiement' });
+  }
+});
+
+// --- Polling/status endpoint for client ---
+app.get('/api/tx-status/:transaction_ref', async (req, res) => {
+  try {
+    const txRef = req.params.transaction_ref;
+    const url = `${API_BASE}/api/${PUBLIC_KEY}/checkStatus/${encodeURIComponent(txRef)}`;
+    const response = await axios.get(url);
+    // Option: update local DB with response.data
+    res.json(response.data);
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).json({ error: 'Erreur check status' });
+  }
+});
+
+// --- Callback (webhook) endpoint ---
+app.post('/api/callback/mycoolpay', (req, res) => {
+  // My-CoolPay envoie payload + signature MD5 (selon doc). Adapte ici le nom du champ.
+  const payload = req.body;
+  const signature = req.headers['x-mycoolpay-signature'] || req.body.signature || '';
+
+  // Construire la string à signer selon la doc (ex: md5(private_key + transaction_ref + amount))
+  // Ici hypothétique: md5(private_key + "|" + payload.transaction_ref + "|" + payload.status)
+  const toSign = `${PRIVATE_KEY}|${payload.transaction_ref || ''}|${payload.status || ''}`;
+  const digest = crypto.createHash('md5').update(toSign).digest('hex');
+
+  if (digest !== signature) {
+    console.warn('Signature invalide', { digest, signature });
+    return res.status(400).send('KO');
+  }
+
+  // Vérifier/mettre à jour transaction dans DB selon payload.status
+  // Exemple de traitement :
+  // if (payload.status === 'SUCCESS') markTransactionSuccess(payload.transaction_ref,...)
+
+  // Réponse à My-CoolPay (doc dit renvoyer "OK" si tout est validé)
+  res.send('OK');
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, ()=> console.log(`Listening ${PORT}`));
+
+> Remarques :
+
+Le calcul exact de la signature MD5 dépend de la doc : adapte la concaténation des champs et l’ordre.
+
+Conserver toutes les données reçues, en particulier transaction_ref, amount, status, operator etc.
+
+
+
+
+
+---
+
+5) Front-end — ouverture du popup/modal & polling
+
+Option A — Popup avec window.open + postMessage fallback
+
+payment.html (extrait JS) :
+
+<!-- payment.html -->
+<button id="payBtn">Payer 15 000 XAF</button>
+
+<script>
+async function startPayment() {
+  // 1) create transaction via backend
+  const create = await fetch('/api/create-payment', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      amount: 15000,
+      currency: 'XAF',
+      reference: 'ORDER_1234',
+      reason: 'Achat produit X',
+      customer: { name: 'Fabrice', phone: '+2376...', email: 'client@example.com' }
+    })
+  });
+  const data = await create.json();
+  // data should contain payment_url and transaction_ref
+  const paymentUrl = data.payment_url || data.paymentUrl || data.data?.payment_url;
+  const transactionRef = data.transaction_ref || data.transactionRef || data.data?.transaction_ref;
+
+  if (!paymentUrl || !transactionRef) {
+    alert('Impossible de créer le paiement');
+    return;
+  }
+
+  // 2) open popup
+  const popup = window.open(paymentUrl, 'myCoolPay', 'width=430,height=700');
+
+  // 3) Poll status every 3s
+  const poll = setInterval(async () => {
+    try {
+      const s = await fetch(`/api/tx-status/${encodeURIComponent(transactionRef)}`);
+      const j = await s.json();
+      // Assume j.status exists and equals SUCCESS/FAILED/PENDING
+      const status = j.status || j.data?.status;
+      if (status === 'SUCCESS' || status === 'COMPLETED') {
+        clearInterval(poll);
+        if (popup && !popup.closed) popup.close();
+        alert('Paiement réussi !');
+        // rediriger vers page success ou afficher message
+      } else if (status === 'FAILED' || status === 'CANCELED') {
+        clearInterval(poll);
+        if (popup && !popup.closed) popup.close();
+        alert('Paiement échoué ou annulé.');
+      }
+      // else continue polling
+    } catch (err) {
+      console.error('poll error', err);
+    }
+  }, 3000);
+
+  // 4) Option: detect if user closes popup manually
+  const popupCheck = setInterval(() => {
+    if (popup && popup.closed) {
+      clearInterval(popupCheck);
+      // Keep polling for a short while or ask user to refresh
+      console.log('Popup fermé par l’utilisateur');
+    }
+  }, 1000);
+}
+
+document.getElementById('payBtn').addEventListener('click', startPayment);
+</script>
+
+Option B — Lightbox/iframe (si My-CoolPay autorise X-Frame-Options)
+
+<div id="modal" style="display:none;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.6);">
+  <div style="width:720px;height:90%;margin:3% auto;background:#fff;position:relative;">
+    <button id="closeModal">X</button>
+    <iframe id="payFrame" src="" style="width:100%;height:95%;border:0;"></iframe>
+  </div>
+</div>
+
+Puis en JS tu changes #payFrame.src = paymentUrl et affiches le modal. Si l’iframe est bloquée (X-Frame-Options: DENY), fallback vers window.open.
+
+
+---
+
+6) Communication parent ↔ popup (recommandé si le checkout externe exécute window.opener.postMessage à la fin)
+
+Si la page de paiement peut exécuter du JS pour postMessage sur la window.opener, c’est idéal :
+
+Parent (site) écoute :
+
+window.addEventListener('message', (ev) => {
+  if (ev.origin !== 'https://checkout.my-coolpay.com') return; // adapte domaine
+  const payload = ev.data;
+  if (payload.type === 'MYCOOLPAY_PAYMENT_RESULT') {
+    // payload: {transaction_ref, status}
+    console.log('Result', payload);
+  }
+});
+
+La page de checkout (si My-CoolPay le permet / personnalisation) enverra :
+
+window.opener.postMessage({ type: 'MYCOOLPAY_PAYMENT_RESULT', transaction_ref: '...', status: 'SUCCESS' }, 'https://your-site.com');
+
+> Important : Vérifie que My-CoolPay supporte la personnalisation success_url qui peut exécuter un script pour postMessage. Sinon, rely sur polling + callback.
+
+
+
+
+---
+
+7) Gestion des cas limites & UX
+
+Popup bloqué : vérifier window.open renvoie null. Afficher message demandant d’autoriser popups ou fallback en redirection.
+
+Iframe refusée : vérifier en console réseau les headers X-Frame-Options / Content-Security-Policy. Si refusé → window.open.
+
+Utilisateur ferme popup : continuer polling 30–60s, puis afficher « paiement en attente » et bouton « vérifier statut ».
+
+Callback non reçu : polling doit être capable de confirmer via checkStatus.
+
+Double soumission : désactiver bouton après premier click jusqu’à statut final.
+
+Timeout : si PENDING > X minutes, marquer comme EXPIRED et demander nouvel essai.
+
+
+
+---
+
+8) Sécurité & bonnes pratiques
+
+Ne jamais exposer la clé privée côté client. Toutes les requêtes sensibles passent par ton backend.
+
+Valider la signature MD5 exactement comme dans la doc. Si la doc indique un ordre / champs spécifiques, respecte-les.
+
+HTTPS obligatoire pour callback et site.
+
+Enregistrer les logs (request body des callbacks, IP source) pour audit.
+
+Limiter l’accès à l’endpoint webhook par whitelist d’IP si la doc fournie des IP fixes.
+
+Taux de polling : 2–5s max au début, puis espacer si PENDING long. Utilise WebSocket si tu veux push serveur→client (meilleure UX).
+
+
+
+---
+
+9) Tests à effectuer avant mise en prod
+
+1. Mode sandbox / test keys fournis par My-CoolPay si disponibles.
+
+
+2. Créer paiement test et vérifier payment_url s’ouvre en popup.
+
+
+3. Simuler callback (outil comme curl ou Postman) en envoyant payloads PENDING, SUCCESS, FAILED avec signature correcte.
+
+
+4. Vérifier que checkStatus renvoie les bons statuts et ton DB est mis à jour.
+
+
+5. Tester fermeture du popup, blocage d’iframe, interruption réseau.
+
+
+6. Vérifier logs et scénario de replay (webhook livré plus tard).
+
+
+
+
+---
+
+10) Exemple de test du callback (curl)
+
+(adapte les champs selon doc)
+
+# construire signature md5 selon algo doc (exemple hypothétique)
+SIGNATURE=$(echo -n "sk_test_YYYYYYYY|ORDER_1234|SUCCESS" | md5sum | awk '{print $1}')
+
+curl -X POST "https://your-site.com/api/callback/mycoolpay" \
+  -H "Content-Type: application/json" \
+  -H "X-MyCoolPay-Signature: $SIGNATURE" \
+  -d '{
+    "transaction_ref": "ORDER_1234",
+    "amount": 15000,
+    "currency":"XAF",
+    "status":"SUCCESS",
+    "operator":"MTN",
+    "signature":"'"$SIGNATURE"'"
+  }'
+
+Tu dois recevoir OK.
+
+
+---
+
+11) Checklist de livraison à une IA / dev
+
+Fournis à l’IA / dev ces éléments (pré-remplis) :
+
+[ ] PUBLIC_KEY, PRIVATE_KEY, API_BASE
+
+[ ] URL CALLBACK_URL publique et accessible (HTTPS)
+
+[ ] Exemple de structure DB pour transactions (id, order_ref, tx_ref, amount, currency, status, payload, created_at, updated_at)
+
+[ ] Nom de domaine(s) de production pour whitelisting
+
+[ ] Page success/cancel à afficher côté site
+
+[ ] Indiquer si My-CoolPay autorise iframe / postMessage (si oui, fournir domaine checkout)
+
+[ ] Environnement de test (sandbox keys)
+
+
+
+---
+
+12) Exemples rapides pour donner à une IA génératrice de code
+
+Si tu veux donner un bref prompt prêt pour une IA spécialisée, colle-lui ceci :
+
+> "Implémente un service Node.js/Express pour My-CoolPay avec endpoints /api/create-payment (POST) et /api/callback/mycoolpay (POST). Utilise Axios pour appeler https://api.my-coolpay.com/api/{PUBLIC_KEY}/paylink. Vérifie la signature MD5 du callback selon le format md5(PRIVATE_KEY + '|' + transaction_ref + '|' + status). Implémente en plus un endpoint /api/tx-status/:transaction_ref qui appelle checkStatus et renvoie le résultat. Prépare aussi un exemple front-end HTML/JS qui ouvre le payment_url en popup et fait du polling. Respecte les variables d'environnement et n’expose jamais la clé privée côté client."
+
+
+
+
+--

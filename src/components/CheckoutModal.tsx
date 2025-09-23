@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { CoolPayModal } from './CoolPayModal';
-import { ShoppingCart, MapPin, CreditCard, Truck, Phone, Mail, User } from 'lucide-react';
+import { ShoppingCart, MapPin, CreditCard, Truck, Phone, Mail, User, Trash2 } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 
 interface Product {
@@ -43,7 +43,7 @@ interface CheckoutModalProps {
 type PaymentMethod = 'cash_on_delivery' | 'coolpay';
 
 export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModalProps) {
-  const { cartItems, totalPrice, clearCart } = useCart();
+  const { cartItems, totalPrice, clearCart, removeFromCart } = useCart();
   const [cities, setCities] = useState<City[]>([]);
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash_on_delivery');
@@ -59,18 +59,13 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
 
   const selectedCityData = cities.find(c => c.id === selectedCity);
   const isPaymentRequired = selectedCityData?.payment_required_before_shipping || false;
+  const effectivePaymentMethod = isPaymentRequired ? 'coolpay' : paymentMethod;
 
   useEffect(() => {
     if (isOpen) {
       loadCities();
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    if (isPaymentRequired) {
-      setPaymentMethod('coolpay');
-    }
-  }, [isPaymentRequired]);
 
   const loadCities = async () => {
     try {
@@ -130,7 +125,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
         status: status,
         city_id: selectedCity,
         expected_delivery_date: expectedDeliveryDate.toISOString(),
-        payment_method: paymentMethod,
+        payment_method: effectivePaymentMethod,
         notes: `Ville: ${selectedCityData?.name}, Paiement: ${paymentMethod === 'coolpay' ? 'En ligne' : 'À la livraison'}`
       }])
       .select('id')
@@ -157,7 +152,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
     setLoading(true);
     try {
       // Si paiement CoolPay est sélectionné OU requis pour cette ville
-      if (paymentMethod === 'coolpay' || isPaymentRequired) {
+      if (effectivePaymentMethod === 'coolpay') {
         const newOrderId = await createOrder('pending_payment');
         if (newOrderId) {
           setOrderId(newOrderId);
@@ -231,7 +226,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
 
   return (
     <>
-      <ResponsiveDialog open={isOpen} onOpenChange={onClose} className="sm:max-w-2xl" contentClassName="max-h-[90vh] overflow-y-auto">
+      <ResponsiveDialog open={isOpen} onOpenChange={onClose} className="w-11/12 sm:max-w-2xl" contentClassName="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" />
@@ -262,6 +257,9 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
                       <Badge variant="secondary">Premium</Badge>
                     )}
                     <p className="font-medium">{formatPrice(item.price * item.quantity)}</p>
+                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-500" onClick={() => removeFromCart(item.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -356,7 +354,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
                       id="cash_on_delivery"
                       name="payment_method"
                       value="cash_on_delivery"
-                      checked={paymentMethod === 'cash_on_delivery'}
+                      checked={effectivePaymentMethod === 'cash_on_delivery'}
                       onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
                       className="w-4 h-4"
                     />
@@ -372,7 +370,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
                     id="coolpay"
                     name="payment_method"
                     value="coolpay"
-                    checked={paymentMethod === 'coolpay' || isPaymentRequired}
+                    checked={effectivePaymentMethod === 'coolpay'}
                     onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
                     disabled={isPaymentRequired}
                     className="w-4 h-4"

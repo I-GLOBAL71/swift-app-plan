@@ -4,47 +4,15 @@ import ProductCard from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
 import { Package, ShoppingBag, ArrowRight, Star, Heart, Shield } from "lucide-react";
 import { toast } from "sonner";
+import { Product } from "@/lib/types";
 
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  image_url: string[] | string | null;
-  is_premium: boolean;
-  keywords: string[];
-  synonyms: string[];
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+
+interface StandardSectionProps {
+  products: Product[];
+  loading: boolean;
 }
 
-const StandardSection = () => {
-  const [standardProducts, setStandardProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadStandardProducts();
-  }, []);
-
-  const loadStandardProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("is_premium", false)
-        .eq("is_active", true)
-        .limit(8);
-
-      if (error) throw error;
-      setStandardProducts(data as Product[] || []);
-    } catch (error) {
-      console.error("Error loading standard products:", error);
-      toast.error("Erreur lors du chargement des produits");
-    } finally {
-      setLoading(false);
-    }
-  };
+const StandardSection = ({ products: standardProducts, loading }: StandardSectionProps) => {
 
   if (loading) {
     return (
@@ -120,16 +88,18 @@ const StandardSection = () => {
             {/* CTA Section */}
             <div className="text-center bg-card/50 rounded-2xl p-8 border border-primary/20">
               <h3 className="text-2xl font-bold text-foreground mb-4">
-                Plus de 100 produits vous attendent !
+                Des milliers de produits vous attendent !
               </h3>
               <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
                 Explorez notre catalogue complet et trouvez le produit parfait au prix qui vous convient.
               </p>
-              <Button variant="outline" size="lg" className="group w-full sm:w-auto">
-                <Package className="w-5 h-5 mr-2" />
-                Voir Tous les Produits
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
+              <a href="/products">
+                <Button variant="outline" size="lg" className="group w-full sm:w-auto">
+                  <Package className="w-5 h-5 mr-2" />
+                  Voir Tous les Produits
+                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </a>
             </div>
           </>
         ) : (

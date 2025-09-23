@@ -1,11 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ShoppingCart } from "lucide-react";
+import { Sparkles, ShoppingCart, Share2 } from "lucide-react";
 import { ProductImageCarousel } from "./ProductImageCarousel";
+import ShareButton from "./ShareButton";
 import { useCart } from "@/contexts/CartContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useState, useRef } from "react";
 
 import { Tables } from "@/integrations/supabase/types";
 
@@ -17,14 +19,29 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { toast } = useToast();
+  const [justSwiped, setJustSwiped] = useState(false);
+  const swipeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const images: string[] = (Array.isArray(product.image_url)
     ? product.image_url.filter((i): i is string => typeof i === 'string')
     : (typeof product.image_url === 'string' ? [product.image_url] : [])
   );
 
+  const handleSwipe = () => {
+    setJustSwiped(true);
+    if (swipeTimeoutRef.current) {
+      clearTimeout(swipeTimeoutRef.current);
+    }
+    swipeTimeoutRef.current = setTimeout(() => {
+      setJustSwiped(false);
+    }, 200);
+  };
+
   const handleProductClick = () => {
-    navigate(`/product/${product.id}`);
+    if (justSwiped) {
+      return;
+    }
+    navigate(`/product/${product.slug}/${product.id}`);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -50,9 +67,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
       <CardContent className="p-4">
         <div className="aspect-square rounded-lg overflow-hidden mb-4 bg-muted">
           <ProductImageCarousel 
-            images={images} 
+            images={images}
             productName={product.title}
             className="h-full"
+            onSwipe={handleSwipe}
           />
         </div>
         
@@ -71,18 +89,21 @@ const ProductCard = ({ product }: ProductCardProps) => {
             {product.description || ""}
           </p>
           
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-xl font-bold text-primary">
               {product.price.toLocaleString()} FCFA
             </div>
-            <Button 
-              size="sm" 
-              onClick={handleAddToCart}
-              className="flex items-center gap-1"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              Ajouter
-            </Button>
+            <div className="flex items-center gap-2">
+              <ShareButton product={{ id: product.id, title: product.title, slug: product.slug }} />
+              <Button
+                size="sm"
+                onClick={handleAddToCart}
+                className="flex items-center gap-1"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                Ajouter
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>

@@ -28,16 +28,22 @@ const Header = () => {
           </Link>
 
           <nav className="hidden md:flex items-center space-x-6">
-            <Button variant="ghost" className="text-base font-medium">
-              Accueil
-            </Button>
-            <Button variant="ghost" className="text-base font-medium">
-              Produits
-            </Button>
-            <Button variant="premium" size="sm" className="flex items-center gap-2">
-              <Crown className="w-4 h-4" />
-              Premium
-            </Button>
+            <Link to="/">
+              <Button variant="ghost" className="text-base font-medium">
+                Accueil
+              </Button>
+            </Link>
+            <Link to="/products">
+              <Button variant="ghost" className="text-base font-medium">
+                Produits
+              </Button>
+            </Link>
+            <Link to="/premium">
+              <Button variant="premium" size="sm" className="flex items-center gap-2">
+                <Crown className="w-4 h-4" />
+                Premium
+              </Button>
+            </Link>
           </nav>
 
           <div className="flex items-center space-x-1 sm:space-x-3">
@@ -57,29 +63,35 @@ const Header = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden mt-4 pb-4 border-t border-border pt-4">
             <nav className="flex flex-col space-y-3">
-              <Button 
-                variant="ghost" 
-                className="text-base font-medium justify-start"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Accueil
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="text-base font-medium justify-start"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Produits
-              </Button>
-              <Button 
-                variant="premium" 
-                size="sm" 
-                className="flex items-center gap-2 justify-start w-fit"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <Crown className="w-4 h-4" />
-                Premium
-              </Button>
+              <Link to="/" className="w-full">
+                <Button
+                  variant="ghost"
+                  className="text-base font-medium justify-start w-full"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Accueil
+                </Button>
+              </Link>
+              <Link to="/products" className="w-full">
+                <Button
+                  variant="ghost"
+                  className="text-base font-medium justify-start w-full"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Produits
+                </Button>
+              </Link>
+              <Link to="/premium" className="w-full">
+                <Button
+                  variant="premium"
+                  size="sm"
+                  className="flex items-center gap-2 justify-start w-fit"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Crown className="w-4 h-4" />
+                  Premium
+                </Button>
+              </Link>
             </nav>
           </div>
         )}

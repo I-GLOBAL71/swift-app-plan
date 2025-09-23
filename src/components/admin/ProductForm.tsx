@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, Wand2 } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Badge } from "@/components/ui/badge";
+import { Sparkles, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface Product {
@@ -15,11 +17,12 @@ interface Product {
   title: string;
   description: string;
   price: number;
-  image_url: string;
+  image_url: string[];
   is_premium: boolean;
   keywords: string[];
   synonyms: string[];
   is_active: boolean;
+  similar_products_type?: 'auto' | 'manual';
 }
 
 interface ProductFormProps {
@@ -34,34 +37,110 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
     title: product?.title || "",
     description: product?.description || "",
     price: product?.price || globalPrice,
-    image_url: product?.image_url || "",
+    image_url: (Array.isArray(product?.image_url) ? product.image_url.filter(i => typeof i === 'string') : []) as string[],
     is_premium: product?.is_premium || false,
     keywords: Array.isArray(product?.keywords) ? product.keywords : [],
     synonyms: Array.isArray(product?.synonyms) ? product.synonyms : [],
     is_active: product?.is_active ?? true,
+    similar_products_type: product?.similar_products_type || 'auto',
   });
   const [loading, setLoading] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
+  const [manualSimilarProducts, setManualSimilarProducts] = useState<Product[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    if (product?.id && product.similar_products_type === 'manual') {
+        const fetchRelatedProducts = async () => {
+            const { data, error } = await supabase
+                .from('product_relations')
+                .select('similar_product_id')
+                .eq('product_id', product.id);
+
+            if (error) {
+                console.error("Error fetching related products:", error);
+                return;
+            }
+
+            const relatedIds = data.map(r => r.similar_product_id);
+            if (relatedIds.length > 0) {
+                const { data: products, error: productsError } = await supabase
+                    .from('products')
+                    .select('*')
+                    .in('id', relatedIds);
+
+                if (productsError) {
+                    console.error("Error fetching product details:", productsError);
+                } else {
+                    setManualSimilarProducts(products as Product[]);
+                }
+            }
+        };
+        fetchRelatedProducts();
+    }
+  }, [product]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      let savedProduct;
+      const productDataToSave = { ...formData };
+
       if (product?.id) {
-        // Mise à jour
-        const { error } = await supabase
+        // Update
+        const { data, error } = await supabase
           .from("products")
-          .update(formData)
-          .eq("id", product.id);
+          .update(productDataToSave)
+          .eq("id", product.id)
+          .select()
+          .single();
         if (error) throw error;
+        savedProduct = data;
         toast.success("Produit mis à jour avec succès");
       } else {
-        // Création
-        const { error } = await supabase.from("products").insert([formData]);
+        // Create
+        const { data, error } = await supabase
+          .from("products")
+          .insert([productDataToSave])
+          .select()
+          .single();
         if (error) throw error;
+        savedProduct = data;
         toast.success("Produit créé avec succès");
       }
+
+      // Handle similar products relations
+      if (savedProduct) {
+        const { error: deleteError } = await supabase
+          .from('product_relations')
+          .delete()
+          .eq('product_id', savedProduct.id);
+
+        if (deleteError) {
+          console.error("Error clearing old relations:", deleteError);
+          // Not throwing, maybe just log
+        }
+
+        if (formData.similar_products_type === 'manual' && manualSimilarProducts.length > 0) {
+          const relations = manualSimilarProducts.map(p => ({
+            product_id: savedProduct.id,
+            similar_product_id: p.id,
+          }));
+          const { error: insertError } = await supabase
+            .from('product_relations')
+            .insert(relations);
+
+          if (insertError) {
+            console.error("Error saving new relations:", insertError);
+            toast.error("Erreur lors de la sauvegarde des produits similaires");
+          }
+        }
+      }
+
       onSuccess();
     } catch (error) {
       console.error("Erreur lors de la sauvegarde:", error);
@@ -113,6 +192,43 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
   const handleSynonymsChange = (value: string) => {
     const synonyms = value.split(",").map((s) => s.trim()).filter(Boolean);
     setFormData({ ...formData, synonyms });
+  };
+
+  const handleSearch = async (term: string) => {
+    setSearchTerm(term);
+    if (term.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, title, image_url, price')
+        .ilike('title', `%${term}%`)
+        .not('id', 'eq', product?.id || '00000000-0000-0000-0000-000000000000') // Exclude self
+        .limit(5);
+
+      if (error) throw error;
+      setSearchResults(data as Product[] || []);
+    } catch (error) {
+      console.error("Error searching products:", error);
+      toast.error("Erreur lors de la recherche de produits");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const addSimilarProduct = (p: Product) => {
+    if (!manualSimilarProducts.find(sp => sp.id === p.id)) {
+      setManualSimilarProducts([...manualSimilarProducts, p]);
+    }
+    setSearchTerm("");
+    setSearchResults([]);
+  };
+
+  const removeSimilarProduct = (productId: string) => {
+    setManualSimilarProducts(manualSimilarProducts.filter(p => p.id !== productId));
   };
 
   return (
@@ -168,8 +284,8 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                 <Label htmlFor="image_url">URL de l'image</Label>
                 <Input
                   id="image_url"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  value={formData.image_url.join(', ')}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
                   placeholder="https://example.com/image.jpg"
                 />
               </div>
@@ -225,6 +341,78 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                 />
               </div>
             </div>
+          </div>
+
+          <div className="col-span-1 lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Produits Similaires</CardTitle>
+                <CardDescription>
+                  Choisissez comment les produits similaires sont affichés.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <RadioGroup
+                  value={formData.similar_products_type}
+                  onValueChange={(value: 'auto' | 'manual') => setFormData({ ...formData, similar_products_type: value })}
+                  className="flex space-x-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="auto" id="auto" />
+                    <Label htmlFor="auto">Automatique</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="manual" id="manual" />
+                    <Label htmlFor="manual">Manuel</Label>
+                  </div>
+                </RadioGroup>
+
+                {formData.similar_products_type === 'manual' && (
+                  <div className="space-y-4 pt-4 border-t">
+                    <div>
+                      <Label htmlFor="search-similar">Rechercher des produits</Label>
+                      <Input
+                        id="search-similar"
+                        placeholder="Titre du produit..."
+                        value={searchTerm}
+                        onChange={(e) => handleSearch(e.target.value)}
+                      />
+                      {isSearching && <p className="text-sm text-muted-foreground mt-2">Recherche...</p>}
+                      {searchResults.length > 0 && (
+                        <div className="mt-2 border rounded-md max-h-60 overflow-y-auto">
+                          {searchResults.map(p => (
+                            <div key={p.id} onClick={() => addSimilarProduct(p)} className="p-2 hover:bg-accent cursor-pointer flex items-center gap-4">
+                              <img src={Array.isArray(p.image_url) ? p.image_url[0] : p.image_url || '/placeholder.svg'} alt={p.title} className="w-10 h-10 object-cover rounded" />
+                              <div>
+                                <p className="font-medium">{p.title}</p>
+                                <p className="text-sm text-muted-foreground">{p.price} FCFA</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <Label>Produits similaires sélectionnés</Label>
+                      {manualSimilarProducts.length === 0 ? (
+                        <p className="text-sm text-muted-foreground mt-2">Aucun produit sélectionné.</p>
+                      ) : (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {manualSimilarProducts.map(p => (
+                            <Badge key={p.id} variant="secondary" className="flex items-center gap-1 pl-2 pr-1">
+                              {p.title}
+                              <button type="button" onClick={() => removeSimilarProduct(p.id!)} className="rounded-full hover:bg-muted-foreground/20 p-0.5">
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {formData.image_url && (

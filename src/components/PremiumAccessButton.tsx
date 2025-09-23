@@ -27,45 +27,44 @@ const PremiumAccessButton = () => {
                 <Sparkles className="w-6 h-6 text-accent absolute -top-2 -right-2 animate-pulse-soft" />
               </div>
               <h2 className="text-3xl md:text-4xl font-bold bg-gradient-premium bg-clip-text text-transparent">
-                Collection Premium
+                Nos Gadgets Premium
               </h2>
             </div>
 
             {/* Description */}
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
-              Découvrez nos créations d'exception, façonnées avec passion et expertise. 
-              Des pièces uniques qui incarnent l'art artisanal à son apogée.
+              Découvrez nos gadgets exceptionnels, une sélection de produits uniques dont les prix dépassent 3,000 FCFA. Profitez des prix les plus compétitifs du marché.
             </p>
 
             {/* Features */}
             <div className="flex flex-wrap items-center justify-center gap-6 mb-8">
               <div className="flex items-center gap-2 text-premium">
                 <Star className="w-5 h-5" />
-                <span className="font-medium">Qualité Exceptionnelle</span>
+                <span className="font-medium">Gadgets Exceptionnels</span>
               </div>
               <div className="flex items-center gap-2 text-premium">
                 <Crown className="w-5 h-5" />
-                <span className="font-medium">Édition Limitée</span>
+                <span className="font-medium">Prix {'>'} 3,000 FCFA</span>
               </div>
               <div className="flex items-center gap-2 text-premium">
                 <Sparkles className="w-5 h-5" />
-                <span className="font-medium">Fait Main</span>
+                <span className="font-medium">Meilleurs Prix Garantis</span>
               </div>
             </div>
 
             {/* CTA Button */}
             <Button
               onClick={handleClick}
-              className="group bg-gradient-premium hover:shadow-premium border-0 text-premium-foreground font-bold transition-all duration-300 hover:scale-105 w-full sm:w-auto h-16 rounded-lg px-16 sm:px-20 text-lg"
+              className="group bg-gradient-premium hover:shadow-premium border-0 text-premium-foreground font-bold transition-all duration-300 hover:scale-105 w-full sm:w-auto h-16 rounded-lg px-8 sm:px-12 text-base flex items-center justify-center gap-3"
             >
-              <Crown className="w-6 h-6 mr-3" />
-              Explorer la Collection Premium
-              <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform" />
+              <Crown className="w-6 h-6" />
+              <span>Explorer nos Gadgets Premium</span>
+              <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
             </Button>
 
             {/* Sub text */}
             <p className="text-sm text-muted-foreground mt-4 opacity-80">
-              Accès exclusif aux créations les plus raffinées
+              Accès exclusif à nos meilleurs gadgets
             </p>
           </div>
         </div>

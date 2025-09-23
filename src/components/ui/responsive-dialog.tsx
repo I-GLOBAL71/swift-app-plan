@@ -1,4 +1,5 @@
 import * as React from "react"
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -13,16 +14,17 @@ interface ResponsiveDialogProps extends React.ComponentProps<typeof Dialog> {
   children: React.ReactNode
   className?: string
   contentClassName?: string
+  forceDialog?: boolean
 }
 
-export function ResponsiveDialog({ children, className, contentClassName, ...props }: ResponsiveDialogProps) {
+export function ResponsiveDialog({ children, className, contentClassName, forceDialog, ...props }: ResponsiveDialogProps) {
   const isMobile = useIsMobile()
 
-  if (isMobile) {
+  if (isMobile && !forceDialog) {
     return (
       <Drawer {...props}>
-        <DrawerContent className={className}>
-          <div className={contentClassName}>{children}</div>
+        <DrawerContent>
+          <div className={cn("p-4", className, contentClassName)}>{children}</div>
         </DrawerContent>
       </Drawer>
     )

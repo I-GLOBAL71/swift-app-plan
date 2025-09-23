@@ -15,11 +15,12 @@ interface Product {
   title: string;
   description: string;
   price: number;
-  image_url: string;
+  image_url: any;
   is_premium: boolean;
   keywords: string[];
   synonyms: string[];
   is_active: boolean;
+  similar_products_type: 'auto' | 'manual';
   created_at: string;
 }
 
@@ -142,7 +143,7 @@ export function ProductsManagement() {
                     <TableRow key={product.id}>
                       <TableCell>
                         <img
-                          src={product.image_url || "/placeholder.svg"}
+                          src={Array.isArray(product.image_url) ? product.image_url[0] : product.image_url || "/placeholder.svg"}
                           alt={product.title}
                           className="w-12 h-12 object-cover rounded"
                         />

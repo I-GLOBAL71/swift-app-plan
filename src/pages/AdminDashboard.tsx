@@ -10,13 +10,14 @@ import { DashboardStats } from "@/components/admin/DashboardStats";
 import { SettingsManagement } from "@/components/admin/SettingsManagement";
 import SectionsManagement from "@/components/admin/SectionsManagement";
 import HeroSlidesManagement from "@/components/admin/HeroSlidesManagement";
-import { LogOut, Package, ShoppingCart, BarChart3, Settings, Layout, MapPin, Presentation, Menu } from "lucide-react";
+import PagesManagement from "@/components/admin/PagesManagement";
+import { LogOut, Package, ShoppingCart, BarChart3, Settings, Layout, MapPin, Presentation, Menu, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
-type TabValue = "dashboard" | "hero" | "sections" | "products" | "orders" | "cities" | "settings";
+type TabValue = "dashboard" | "hero" | "sections" | "products" | "orders" | "cities" | "pages" | "settings";
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
@@ -115,6 +116,7 @@ export default function AdminDashboard() {
                   {renderTabButton("products", "Produits", <Package className="h-4 w-4" />)}
                   {renderTabButton("orders", "Commandes", <ShoppingCart className="h-4 w-4" />)}
                   {renderTabButton("cities", "Villes", <MapPin className="h-4 w-4" />)}
+                  {renderTabButton("pages", "Pages", <FileText className="h-4 w-4" />)}
                   {renderTabButton("settings", "Paramètres", <Settings className="h-4 w-4" />)}
                 </div>
               </SheetContent>
@@ -145,6 +147,10 @@ export default function AdminDashboard() {
                 <TabsTrigger value="cities" className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
                   Villes
+                </TabsTrigger>
+                <TabsTrigger value="pages" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Pages
                 </TabsTrigger>
                 <TabsTrigger value="settings" className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
@@ -177,6 +183,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="cities">
             <CitiesManagement />
+          </TabsContent>
+
+          <TabsContent value="pages">
+            <PagesManagement />
           </TabsContent>
 
           <TabsContent value="settings">
