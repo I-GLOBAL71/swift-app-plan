@@ -198,7 +198,6 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
           .from('orders')
           .update({ 
             status: 'confirmed',
-            transaction_id: transactionId,
             updated_at: new Date().toISOString()
           })
           .eq('id', orderId);
