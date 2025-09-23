@@ -412,7 +412,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
           <div className="flex gap-2">
             <Button
               onClick={handleSubmitOrder}
-              disabled={loading || !selectedCity || !customerInfo.name || !customerInfo.phone}
+              disabled={loading || showCoolPayModal || !selectedCity || !customerInfo.name || !customerInfo.phone}
               className="flex-1"
             >
               {loading ? 'Traitement...' : 'Confirmer la commande'}
@@ -427,6 +427,15 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
       <CoolPayModal
         isOpen={showCoolPayModal}
         onClose={() => {
+          // Empêcher la fermeture si le paiement est requis pour cette ville
+          if (isPaymentRequired) {
+            toast({
+              title: "Paiement requis",
+              description: "Vous devez effectuer le paiement pour finaliser votre commande.",
+              variant: "destructive",
+            });
+            return;
+          }
           setShowCoolPayModal(false);
           setOrderId(null);
         }}
