@@ -4,6 +4,7 @@ import ProductCard from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
 import { Crown, Package, Sparkles, Star } from "lucide-react";
 import { toast } from "sonner";
+import { Product } from "@/lib/types";
 
 interface Section {
   id: string;
@@ -19,19 +20,6 @@ interface Section {
   show_standard_only: boolean;
 }
 
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  image_url: string[] | string | null;
-  is_premium: boolean;
-  keywords: string[];
-  synonyms: string[];
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
 
 const DynamicSections = () => {
   const [sections, setSections] = useState<Section[]>([]);

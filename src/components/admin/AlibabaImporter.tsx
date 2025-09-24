@@ -17,6 +17,8 @@ interface ScrapedProduct {
   images: string[];
   price: string;
   variants?: any[];
+  keywords?: string;
+  synonyms?: string;
 }
 
 interface ProductFormData {
@@ -27,6 +29,8 @@ interface ProductFormData {
   isPremium: boolean;
   variants: string[];
   selectedImages: string[];
+  keywords?: string;
+  synonyms?: string;
 }
 
 interface ProductImage {
@@ -137,7 +141,9 @@ export function AlibabaImporter() {
       price: estimatedPrice,
       isPremium: false,
       variants: scrapedProduct.variants?.map(v => JSON.stringify(v)) || [],
-      selectedImages
+      selectedImages,
+      keywords: rewrittenContent.keywords || scrapedProduct.keywords || "",
+      synonyms: rewrittenContent.synonyms || scrapedProduct.synonyms || ""
     });
     setShowProductForm(true);
   };
@@ -154,8 +160,8 @@ export function AlibabaImporter() {
         description: productFormData.description,
         price: productFormData.isPremium ? (productFormData.premiumPrice || productFormData.price) : productFormData.price,
         image_url: productFormData.selectedImages,
-        keywords: rewrittenContent.keywords ? rewrittenContent.keywords.split(',').map(k => k.trim()) : [],
-        synonyms: rewrittenContent.synonyms ? rewrittenContent.synonyms.split(',').map(s => s.trim()) : [],
+        keywords: productFormData.keywords ? productFormData.keywords.split(',').map(k => k.trim()).filter(Boolean) : [],
+        synonyms: productFormData.synonyms ? productFormData.synonyms.split(',').map(s => s.trim()).filter(Boolean) : [],
         is_active: true,
         is_premium: productFormData.isPremium
       };
@@ -508,6 +514,30 @@ export function AlibabaImporter() {
                     }))}
                     placeholder="Couleur: Rouge, Bleu, Vert&#10;Taille: S, M, L, XL&#10;Matériau: Coton, Polyester"
                     rows={4}
+                  />
+                </div>
+
+                <div>
+                  <Label>Mots-clés (séparés par des virgules)</Label>
+                  <Input
+                    value={productFormData.keywords || ''}
+                    onChange={(e) => setProductFormData(prev => ({ 
+                      ...prev, 
+                      keywords: e.target.value 
+                    }))}
+                    placeholder="mode, élégant, qualité"
+                  />
+                </div>
+
+                <div>
+                  <Label>Synonymes (séparés par des virgules)</Label>
+                  <Input
+                    value={productFormData.synonyms || ''}
+                    onChange={(e) => setProductFormData(prev => ({ 
+                      ...prev, 
+                      synonyms: e.target.value 
+                    }))}
+                    placeholder="vêtement, habit, tenue"
                   />
                 </div>
 

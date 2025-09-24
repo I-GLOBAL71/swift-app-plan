@@ -17,7 +17,9 @@ const ProductGrid = () => {
       synonyms: [],
       is_active: true,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      similar_products_type: "auto" as const,
+      slug: "sac-a-main-artisanal-en-cuir"
     },
     { 
       id: "2",
@@ -30,7 +32,9 @@ const ProductGrid = () => {
       synonyms: [],
       is_active: true,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      similar_products_type: "auto" as const,
+      slug: "collier-traditionnel-en-perles"
     },
     { 
       id: "3",
@@ -43,7 +47,9 @@ const ProductGrid = () => {
       synonyms: [],
       is_active: true,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      similar_products_type: "auto" as const,
+      slug: "bracelet-en-bois-sculpte"
     },
     { 
       id: "4",
@@ -56,7 +62,9 @@ const ProductGrid = () => {
       synonyms: [],
       is_active: true,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      similar_products_type: "auto" as const,
+      slug: "echarpe-en-tissu-africain"
     },
     { 
       id: "5",
@@ -69,7 +77,9 @@ const ProductGrid = () => {
       synonyms: [],
       is_active: true,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      similar_products_type: "auto" as const,
+      slug: "boucles-oreilles-en-bronze"
     },
     { 
       id: "6",
@@ -82,7 +92,9 @@ const ProductGrid = () => {
       synonyms: [],
       is_active: true,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      similar_products_type: "auto" as const,
+      slug: "porte-monnaie-en-raphia"
     },
     { 
       id: "7",
@@ -95,7 +107,9 @@ const ProductGrid = () => {
       synonyms: [],
       is_active: true,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      similar_products_type: "auto" as const,
+      slug: "chaussures-en-cuir-naturel"
     },
     { 
       id: "8",
@@ -108,7 +122,9 @@ const ProductGrid = () => {
       synonyms: [],
       is_active: true,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      similar_products_type: "auto" as const,
+      slug: "ceinture-artisanale"
     },
   ];
 
@@ -124,7 +140,9 @@ const ProductGrid = () => {
       synonyms: [],
       is_active: true,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      similar_products_type: "auto" as const,
+      slug: "robe-de-soiree-brodee-a-la-main"
     },
     { 
       id: "p2",
@@ -137,7 +155,9 @@ const ProductGrid = () => {
       synonyms: [],
       is_active: true,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      similar_products_type: "auto" as const,
+      slug: "sculpture-en-bois-precieux"
     },
     { 
       id: "p3",
@@ -150,7 +170,9 @@ const ProductGrid = () => {
       synonyms: [],
       is_active: true,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      similar_products_type: "auto" as const,
+      slug: "bijou-en-or-artisanal"
     },
   ];
 
