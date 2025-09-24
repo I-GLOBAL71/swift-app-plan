@@ -103,8 +103,43 @@ serve(async (req) => {
         })
       })
 
+      if (!geminiResponse.ok) {
+        const txt = await geminiResponse.text().catch(() => '');
+        throw new Error(`Gemini API error: ${geminiResponse.status} ${txt}`)
+      }
+
       const geminiData = await geminiResponse.json()
-      const rewrittenContent = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
+
+      // Robust extraction of text from various Gemini response shapes
+      const pickText = (d: any): string | null => {
+        try {
+          if (!d) return null;
+          if (typeof d === 'string') return d;
+          const candidates = d.candidates || [];
+          for (const c of candidates) {
+            const parts = c?.content?.parts || [];
+            if (Array.isArray(parts)) {
+              for (const p of parts) {
+                if (p && typeof p.text === 'string' && p.text.trim()) return p.text;
+              }
+            }
+            if (typeof c?.output_text === 'string' && c.output_text.trim()) return c.output_text;
+          }
+          if (typeof d?.output_text === 'string' && d.output_text.trim()) return d.output_text;
+          return null;
+        } catch {
+          return null;
+        }
+      }
+
+      const rewrittenContent = pickText(geminiData)?.trim() || ''
+
+      if (!rewrittenContent) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Empty rewrite result', debug: geminiData?.promptFeedback || null }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        )
+      }
 
       return new Response(
         JSON.stringify({ success: true, content: rewrittenContent }),
