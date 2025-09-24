@@ -109,20 +109,28 @@ export function AlibabaImporter() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase function error:", error);
+        throw error;
+      }
 
-      if (data.success) {
-        setRewrittenContent(prev => ({
-          ...prev,
-          [type]: data.content
-        }));
-        toast.success(`${type} réécrit avec succès`);
+      if (data?.success) {
+        const rewrittenText = data.content?.trim();
+        if (rewrittenText) {
+          setRewrittenContent(prev => ({
+            ...prev,
+            [type]: rewrittenText
+          }));
+          toast.success(`${type} réécrit avec succès`);
+        } else {
+          throw new Error("Contenu réécrit vide");
+        }
       } else {
-        throw new Error(data.error || "Erreur lors de la réécriture");
+        throw new Error(data?.error || "Erreur lors de la réécriture");
       }
     } catch (error) {
       console.error("Error rewriting:", error);
-      toast.error("Erreur lors de la réécriture");
+      toast.error(`Erreur lors de la réécriture: ${error.message}`);
     } finally {
       setRewriting(null);
     }
@@ -155,6 +163,17 @@ export function AlibabaImporter() {
     }
 
     try {
+      // Générer un slug à partir du titre
+      const slug = productFormData.title
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+        .replace(/[^a-z0-9\s-]/g, '') // Garder seulement lettres, chiffres, espaces et tirets
+        .trim()
+        .replace(/\s+/g, '-') // Remplacer espaces par tirets
+        .replace(/-+/g, '-') // Éviter les tirets multiples
+        .substring(0, 100); // Limiter la longueur
+
       const productData = {
         title: productFormData.title,
         description: productFormData.description,
@@ -163,7 +182,9 @@ export function AlibabaImporter() {
         keywords: productFormData.keywords ? productFormData.keywords.split(',').map(k => k.trim()).filter(Boolean) : [],
         synonyms: productFormData.synonyms ? productFormData.synonyms.split(',').map(s => s.trim()).filter(Boolean) : [],
         is_active: true,
-        is_premium: productFormData.isPremium
+        is_premium: productFormData.isPremium,
+        slug: slug,
+        similar_products_type: 'manual' as const
       };
 
       const { error } = await supabase
