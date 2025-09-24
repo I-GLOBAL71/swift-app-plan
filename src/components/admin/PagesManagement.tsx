@@ -1,43 +1,195 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "@/components/ui/use-toast";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Mock data until DB is ready
-const MOCK_PAGES = {
-  about: { title: "À Propos de Swift App Plan", content: { description: "Bienvenue sur Swift App Plan...", team: "Notre équipe est composée..." } },
-  delivery: { title: "Politique de Livraison", content: { shipping_times: "5 à 7 jours...", shipping_costs: "Calculés au paiement...", order_tracking: "Email avec numéro de suivi..." } },
-  returns: { title: "Politique de Retours", content: { return_conditions: "30 jours...", return_procedure: "Contactez le support...", refunds: "5 à 10 jours..." } },
-  support: { title: "Contactez-nous", content: { email: "support@swiftappplan.com", phone: "+1 (234) 567-890" } },
-  'privacy-policy': { title: 'Politique de Confidentialité', content: { introduction: 'Introduction...', data_collection: 'Collecte des données...' } },
-  'terms-of-service': { title: 'Conditions d\'Utilisation', content: { introduction: 'Introduction...', user_obligations: 'Obligations de l\'utilisateur...' } },
+type PageSlug = 'about' | 'delivery' | 'returns' | 'support' | 'privacy-policy' | 'terms-of-service';
+
+interface PageContent {
+  [key: string]: any;
+}
+
+interface Page {
+  slug: PageSlug;
+  title: string;
+  content: PageContent;
+  show_in_footer: boolean;
+}
+
+const pageConfig: Record<PageSlug, { title: string; fields: { id: string; label: string; type: 'input' | 'textarea'; rows?: number }[] }> = {
+  'about': {
+    title: 'À Propos',
+    fields: [
+      { id: 'description', label: 'Description', type: 'textarea', rows: 5 },
+      { id: 'team', label: 'Équipe', type: 'textarea', rows: 5 },
+    ]
+  },
+  'delivery': {
+    title: 'Livraison',
+    fields: [
+      { id: 'shipping_times', label: 'Délais de Livraison', type: 'input' },
+      { id: 'shipping_costs', label: 'Frais de Livraison', type: 'input' },
+      { id: 'order_tracking', label: 'Suivi de Commande', type: 'input' },
+    ]
+  },
+  'returns': {
+    title: 'Retours',
+    fields: [
+      { id: 'return_conditions', label: 'Conditions de Retour', type: 'textarea', rows: 4 },
+      { id: 'return_procedure', label: 'Procédure de Retour', type: 'textarea', rows: 4 },
+      { id: 'refunds', label: 'Remboursements', type: 'textarea', rows: 4 },
+    ]
+  },
+  'support': {
+    title: 'Support',
+    fields: [
+      { id: 'email', label: 'Email', type: 'input' },
+      { id: 'phone', label: 'Téléphone', type: 'input' },
+    ]
+  },
+  'privacy-policy': {
+    title: 'Politique de Confidentialité',
+    fields: [
+      { id: 'introduction', label: 'Introduction', type: 'textarea', rows: 5 },
+      { id: 'data_collection', label: 'Collecte des données', type: 'textarea', rows: 5 },
+    ]
+  },
+  'terms-of-service': {
+    title: "Conditions Générales d'Utilisation",
+    fields: [
+      { id: 'introduction', label: 'Introduction', type: 'textarea', rows: 5 },
+      { id: 'user_obligations', label: "Obligations de l'utilisateur", type: 'textarea', rows: 5 },
+    ]
+  }
+};
+
+const fetchPages = async (): Promise<Record<PageSlug, Page>> => {
+  const { data, error } = await supabase.from("pages").select("*");
+  if (error) throw new Error(error.message);
+
+  const pagesBySlug = (data as unknown as Page[]).reduce((acc, page) => {
+    acc[page.slug] = page;
+    return acc;
+  }, {} as Record<PageSlug, Page>);
+
+  return pagesBySlug;
 };
 
 const PagesManagement = () => {
-  const [pages, setPages] = useState(MOCK_PAGES);
+  const queryClient = useQueryClient();
+  const { data: initialPages, isLoading, isError } = useQuery({
+    queryKey: ['pages'],
+    queryFn: fetchPages,
+  });
 
-  const handleInputChange = (page: keyof typeof MOCK_PAGES, field: string, value: string) => {
+  const [pages, setPages] = useState<Record<PageSlug, Page> | null>(null);
+
+  useEffect(() => {
+    if (initialPages) {
+      const pageSlugs = Object.keys(pageConfig) as PageSlug[];
+      
+      const allPages = pageSlugs.reduce((acc, slug) => {
+        const dbPage = initialPages[slug];
+        acc[slug] = {
+          slug: slug,
+          title: dbPage?.title || pageConfig[slug].title,
+          content: dbPage?.content || {},
+          show_in_footer: dbPage?.show_in_footer ?? true,
+        };
+        return acc;
+      }, {} as Record<PageSlug, Page>);
+
+      setPages(allPages);
+    }
+  }, [initialPages]);
+
+  const mutation = useMutation({
+    mutationFn: async ({ slug, title, content, show_in_footer }: { slug: PageSlug, title: string, content: PageContent, show_in_footer: boolean }) => {
+      const { error } = await supabase
+        .from("pages")
+        .upsert({ slug, title, content, show_in_footer });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['pages'] });
+      queryClient.invalidateQueries({ queryKey: ['footerData'] });
+      toast.success(`La page "${variables.title}" a été mise à jour.`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Erreur lors de la mise à jour : ${error.message}`);
+    },
+  });
+
+  const handleInputChange = (page: PageSlug, field: string, value: string) => {
+    if (!pages) return;
     setPages(prev => ({
-      ...prev,
+      ...prev!,
       [page]: {
-        ...prev[page],
-        content: { ...prev[page].content, [field]: value }
+        ...prev![page],
+        content: { ...prev![page].content, [field]: value }
       }
     }));
   };
 
-  const handleSave = (page: keyof typeof MOCK_PAGES) => {
-    console.log("Saving page:", page, pages[page]);
-    // Here you would normally call the API to save the data
-    toast({
-      title: "Page Enregistrée",
-      description: `La page "${pages[page].title}" a été mise à jour.`,
-    });
+  const handleSwitchChange = (page: PageSlug, checked: boolean) => {
+    if (!pages) return;
+    setPages(prev => ({
+      ...prev!,
+      [page]: {
+        ...prev![page],
+        show_in_footer: checked,
+      }
+    }));
   };
+
+  const handleSave = (page: PageSlug) => {
+    if (!pages || !pages[page]) return;
+    const { title, content, show_in_footer } = pages[page];
+    mutation.mutate({ slug: page, title, content, show_in_footer });
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Gestion des Pages</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-10 w-1/2" />
+          <div className="space-y-4 mt-4">
+            <Skeleton className="h-8 w-1/4" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-8 w-1/4" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-10 w-24" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isError || !pages) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Gestion des Pages</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-destructive">Erreur lors du chargement des pages. Veuillez réessayer.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const pageSlugs = Object.keys(pageConfig) as PageSlug[];
 
   return (
     <Card>
@@ -45,179 +197,58 @@ const PagesManagement = () => {
         <CardTitle>Gestion des Pages</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="about">
-          <TabsList>
-            <TabsTrigger value="about">À Propos</TabsTrigger>
-            <TabsTrigger value="delivery">Livraison</TabsTrigger>
-            <TabsTrigger value="returns">Retours</TabsTrigger>
-            <TabsTrigger value="support">Support</TabsTrigger>
-            <TabsTrigger value="privacy-policy">Confidentialité</TabsTrigger>
-            <TabsTrigger value="terms-of-service">CGU</TabsTrigger>
+        <Tabs defaultValue={pageSlugs[0]} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6">
+            {pageSlugs.map(slug => (
+              <TabsTrigger key={slug} value={slug}>
+                {pageConfig[slug].title === "Conditions Générales d'Utilisation" ? "CGU" : 
+                 pageConfig[slug].title === "Politique de Confidentialité" ? "Confidentialité" :
+                 pageConfig[slug].title}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
-          <TabsContent value="about" className="mt-4">
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold">{pages.about.title}</h3>
-              <div className="space-y-2">
-                <Label htmlFor="about-description">Description</Label>
-                <Textarea
-                  id="about-description"
-                  value={pages.about.content.description}
-                  onChange={(e) => handleInputChange('about', 'description', e.target.value)}
-                  rows={5}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="about-team">Équipe</Label>
-                <Textarea
-                  id="about-team"
-                  value={pages.about.content.team}
-                  onChange={(e) => handleInputChange('about', 'team', e.target.value)}
-                  rows={5}
-                />
-              </div>
-              <Button onClick={() => handleSave('about')}>Enregistrer</Button>
-            </div>
-          </TabsContent>
+          {pageSlugs.map(slug => (
+            <TabsContent key={slug} value={slug} className="mt-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold">{pages?.[slug]?.title}</h3>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id={`show-in-footer-${slug}`}
+                      checked={pages?.[slug]?.show_in_footer}
+                      onCheckedChange={(checked) => handleSwitchChange(slug, checked)}
+                    />
+                    <Label htmlFor={`show-in-footer-${slug}`}>Afficher dans le footer</Label>
+                  </div>
+                </div>
 
-          <TabsContent value="delivery" className="mt-4">
-             <div className="space-y-4">
-              <h3 className="text-xl font-semibold">{pages.delivery.title}</h3>
-                <div className="space-y-2">
-                  <Label htmlFor="delivery-times">Délais de Livraison</Label>
-                  <Input
-                      id="delivery-times"
-                      value={pages.delivery.content.shipping_times}
-                      onChange={(e) => handleInputChange('delivery', 'shipping_times', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="delivery-costs">Frais de Livraison</Label>
-                  <Input
-                      id="delivery-costs"
-                      value={pages.delivery.content.shipping_costs}
-                      onChange={(e) => handleInputChange('delivery', 'shipping_costs', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="delivery-tracking">Suivi de Commande</Label>
-                  <Input
-                      id="delivery-tracking"
-                      value={pages.delivery.content.order_tracking}
-                      onChange={(e) => handleInputChange('delivery', 'order_tracking', e.target.value)}
-                  />
-                </div>
-              <Button onClick={() => handleSave('delivery')}>Enregistrer</Button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="returns" className="mt-4">
-             <div className="space-y-4">
-              <h3 className="text-xl font-semibold">{pages.returns.title}</h3>
-                <div className="space-y-2">
-                  <Label htmlFor="returns-conditions">Conditions de Retour</Label>
-                  <Textarea
-                      id="returns-conditions"
-                      value={pages.returns.content.return_conditions}
-                      onChange={(e) => handleInputChange('returns', 'return_conditions', e.target.value)}
-                      rows={4}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="returns-procedure">Procédure de Retour</Label>
-                  <Textarea
-                      id="returns-procedure"
-                      value={pages.returns.content.return_procedure}
-                      onChange={(e) => handleInputChange('returns', 'return_procedure', e.target.value)}
-                      rows={4}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="returns-refunds">Remboursements</Label>
-                  <Textarea
-                      id="returns-refunds"
-                      value={pages.returns.content.refunds}
-                      onChange={(e) => handleInputChange('returns', 'refunds', e.target.value)}
-                      rows={4}
-                  />
-                </div>
-              <Button onClick={() => handleSave('returns')}>Enregistrer</Button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="support" className="mt-4">
-             <div className="space-y-4">
-              <h3 className="text-xl font-semibold">{pages.support.title}</h3>
-                <div className="space-y-2">
-                  <Label htmlFor="support-email">Email</Label>
-                  <Input
-                      id="support-email"
-                      value={pages.support.content.email}
-                      onChange={(e) => handleInputChange('support', 'email', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="support-phone">Téléphone</Label>
-                  <Input
-                      id="support-phone"
-                      value={pages.support.content.phone}
-                      onChange={(e) => handleInputChange('support', 'phone', e.target.value)}
-                  />
-                </div>
-              <Button onClick={() => handleSave('support')}>Enregistrer</Button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="privacy-policy" className="mt-4">
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold">{pages['privacy-policy'].title}</h3>
-              <div className="space-y-2">
-                <Label htmlFor="privacy-intro">Introduction</Label>
-                <Textarea
-                  id="privacy-intro"
-                  value={pages['privacy-policy'].content.introduction}
-                  onChange={(e) => handleInputChange('privacy-policy', 'introduction', e.target.value)}
-                  rows={5}
-                />
+                {pageConfig[slug].fields.map(field => (
+                  <div key={field.id} className="space-y-2">
+                    <Label htmlFor={`${slug}-${field.id}`}>{field.label}</Label>
+                    {field.type === 'textarea' ? (
+                      <Textarea
+                        id={`${slug}-${field.id}`}
+                        value={pages?.[slug]?.content?.[field.id] || ''}
+                        onChange={(e) => handleInputChange(slug, field.id, e.target.value)}
+                        rows={field.rows || 5}
+                      />
+                    ) : (
+                      <Input
+                        id={`${slug}-${field.id}`}
+                        value={pages?.[slug]?.content?.[field.id] || ''}
+                        onChange={(e) => handleInputChange(slug, field.id, e.target.value)}
+                      />
+                    )}
+                  </div>
+                ))}
+                
+                <Button onClick={() => handleSave(slug)} disabled={mutation.isPending}>
+                  {mutation.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="privacy-data">Collecte des données</Label>
-                <Textarea
-                  id="privacy-data"
-                  value={pages['privacy-policy'].content.data_collection}
-                  onChange={(e) => handleInputChange('privacy-policy', 'data_collection', e.target.value)}
-                  rows={5}
-                />
-              </div>
-              <Button onClick={() => handleSave('privacy-policy')}>Enregistrer</Button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="terms-of-service" className="mt-4">
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold">{pages['terms-of-service'].title}</h3>
-              <div className="space-y-2">
-                <Label htmlFor="terms-intro">Introduction</Label>
-                <Textarea
-                  id="terms-intro"
-                  value={pages['terms-of-service'].content.introduction}
-                  onChange={(e) => handleInputChange('terms-of-service', 'introduction', e.target.value)}
-                  rows={5}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="terms-obligations">Obligations de l'utilisateur</Label>
-                <Textarea
-                  id="terms-obligations"
-                  value={pages['terms-of-service'].content.user_obligations}
-                  onChange={(e) => handleInputChange('terms-of-service', 'user_obligations', e.target.value)}
-                  rows={5}
-                />
-              </div>
-              <Button onClick={() => handleSave('terms-of-service')}>Enregistrer</Button>
-            </div>
-          </TabsContent>
-
+            </TabsContent>
+          ))}
         </Tabs>
       </CardContent>
     </Card>

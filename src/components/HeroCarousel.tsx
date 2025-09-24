@@ -91,16 +91,16 @@ const HeroCarousel = () => {
   const currentSlideData = slides[currentSlide];
 
   return (
-    <section className="relative min-h-[80vh] md:min-h-[70vh] flex items-center overflow-hidden">
+    <section className="relative min-h-[90vh] sm:min-h-[70vh] flex items-center overflow-hidden">
       {/* Background Image with Overlay */}
-      <div 
+      <div
         className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
-        style={{ 
+        style={{
           backgroundImage: `url(${currentSlideData.image_url})`,
           transform: `scale(1.05)`
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/60"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/60 to-background/40"></div>
       </div>
       
       {/* Navigation Controls */}
@@ -109,7 +109,7 @@ const HeroCarousel = () => {
           <Button
             variant="outline"
             size="icon"
-            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-background/80 border-primary/20 hover:bg-primary/10"
+            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-background/50 border-primary/20 hover:bg-primary/10"
             onClick={prevSlide}
           >
             <ChevronLeft className="w-5 h-5" />
@@ -118,7 +118,7 @@ const HeroCarousel = () => {
           <Button
             variant="outline"
             size="icon"
-            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-background/80 border-primary/20 hover:bg-primary/10"
+            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-background/50 border-primary/20 hover:bg-primary/10"
             onClick={nextSlide}
           >
             <ChevronRight className="w-5 h-5" />
@@ -131,7 +131,7 @@ const HeroCarousel = () => {
         <Button
           variant="outline"
           size="sm"
-          className="absolute top-4 right-4 z-20 bg-background/80 border-primary/20"
+          className="absolute top-4 right-4 z-20 bg-background/50 border-primary/20"
           onClick={() => setIsAutoPlaying(!isAutoPlaying)}
         >
           <Play className={`w-4 h-4 transition-transform ${isAutoPlaying ? 'scale-110' : 'scale-100'}`} />
@@ -141,8 +141,8 @@ const HeroCarousel = () => {
       
       {/* Content */}
       <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-2xl">
-          <div className="flex items-center gap-2 mb-4 animate-fade-in">
+        <div className="max-w-2xl text-center sm:text-left">
+          <div className="flex items-center justify-center sm:justify-start gap-2 mb-4 animate-fade-in">
             <div className="flex">
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star key={star} className="w-5 h-5 fill-primary text-primary" />
@@ -151,8 +151,8 @@ const HeroCarousel = () => {
             <span className="text-muted-foreground font-medium">Qualité garantie</span>
           </div>
           
-          <h1 
-            className="text-3xl sm:text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight animate-fade-in"
+          <h1
+            className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground mb-4 leading-tight animate-fade-in"
             style={{ animationDelay: '0.1s' }}
           >
             {currentSlideData.title}
@@ -161,45 +161,45 @@ const HeroCarousel = () => {
             </span>
           </h1>
           
-          <p 
-            className="text-xl text-muted-foreground mb-8 leading-relaxed animate-fade-in"
+          <p
+            className="text-lg sm:text-xl text-muted-foreground mb-8 leading-relaxed animate-fade-in"
             style={{ animationDelay: '0.2s' }}
           >
             {currentSlideData.description}
           </p>
           
-          <div 
+          <div
             className="flex flex-col sm:flex-row gap-4 animate-fade-in"
             style={{ animationDelay: '0.3s' }}
           >
-            <Button 
-              variant="cta" 
-              size="xl" 
-              className="group"
+            <Button
+              variant="cta"
+              size="lg"
+              className="group w-full sm:w-auto"
               onClick={() => handleButtonClick(currentSlideData.button_link)}
             >
               {currentSlideData.button_text}
               <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
             </Button>
-            <Button variant="outline" size="lg">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate('/how-it-works')}>
               Comment ça marche ?
             </Button>
           </div>
           
-          <div 
-            className="mt-12 flex items-center gap-8 animate-fade-in"
+          <div
+            className="mt-12 flex items-center justify-center sm:justify-start gap-4 sm:gap-8 animate-fade-in"
             style={{ animationDelay: '0.4s' }}
           >
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary">100+</div>
+              <div className="text-xl sm:text-2xl font-bold text-primary">100+</div>
               <div className="text-sm text-muted-foreground">Produits</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary">500+</div>
+              <div className="text-xl sm:text-2xl font-bold text-primary">500+</div>
               <div className="text-sm text-muted-foreground">Clients satisfaits</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary">24h</div>
+              <div className="text-xl sm:text-2xl font-bold text-primary">24h</div>
               <div className="text-sm text-muted-foreground">Livraison</div>
             </div>
           </div>
@@ -213,8 +213,8 @@ const HeroCarousel = () => {
             <button
               key={index}
               className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                index === currentSlide 
-                  ? 'bg-primary scale-125' 
+                index === currentSlide
+                  ? 'bg-primary scale-125'
                   : 'bg-background/50 hover:bg-background/70'
               }`}
               onClick={() => setCurrentSlide(index)}

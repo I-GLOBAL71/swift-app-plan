@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import HeroCarousel from "@/components/HeroCarousel";
+import HeroSection from "@/components/HeroSection";
 import StandardSection from "@/components/StandardSection";
 import PremiumAccessButton from "@/components/PremiumAccessButton";
 import DynamicSections from "@/components/DynamicSections";
@@ -38,7 +38,7 @@ const Index = () => {
 
   return (
     <main className="flex flex-col items-center">
-      <HeroCarousel />
+      <HeroSection />
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="space-y-12 md:space-y-16">
           <section id="products">

@@ -211,6 +211,36 @@ export type Database = {
           },
         ]
       }
+      pages: {
+        Row: {
+          content: Json
+          created_at: string
+          id: number
+          show_in_footer: boolean | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          id?: number
+          show_in_footer?: boolean | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: number
+          show_in_footer?: boolean | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_relations: {
         Row: {
           product_id: string
@@ -245,6 +275,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          fts: unknown | null
           id: string
           image_url: Json | null
           is_active: boolean | null
@@ -260,6 +291,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          fts?: unknown | null
           id?: string
           image_url?: Json | null
           is_active?: boolean | null
@@ -267,7 +299,7 @@ export type Database = {
           keywords?: string[] | null
           price?: number
           similar_products_type?: Database["public"]["Enums"]["similar_products_mode"]
-          slug?: string
+          slug: string
           synonyms?: string[] | null
           title: string
           updated_at?: string
@@ -275,6 +307,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          fts?: unknown | null
           id?: string
           image_url?: Json | null
           is_active?: boolean | null
@@ -366,20 +399,20 @@ export type Database = {
       }
       social_links: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: number
           name: string
           url: string | null
         }
         Insert: {
-          created_at?: string
-          id?: number
+          created_at?: string | null
+          id?: never
           name: string
           url?: string | null
         }
         Update: {
-          created_at?: string
-          id?: number
+          created_at?: string | null
+          id?: never
           name?: string
           url?: string | null
         }
@@ -390,9 +423,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_slug: {
+        Args: { "": string }
+        Returns: string
+      }
       is_admin_user: {
         Args: { user_uuid?: string }
         Returns: boolean
+      }
+      unaccent: {
+        Args: { "": string }
+        Returns: string
+      }
+      unaccent_init: {
+        Args: { "": unknown }
+        Returns: unknown
       }
     }
     Enums: {

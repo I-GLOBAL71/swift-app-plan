@@ -95,10 +95,10 @@ export function AlibabaImporter() {
   const handleRewrite = async (type: 'title' | 'description' | 'keywords' | 'synonyms') => {
     if (!scrapedProduct) return;
 
-    const content = type === 'title' ? scrapedProduct.title : 
+    const content = type === 'title' ? scrapedProduct.title :
                    type === 'description' ? scrapedProduct.description :
-                   type === 'keywords' ? scrapedProduct.title :
-                   scrapedProduct.title;
+                   (type === 'keywords' || type === 'synonyms') ? `${scrapedProduct.title}\n${scrapedProduct.description}` :
+                   '';
 
     setRewriting(type);
     try {
@@ -123,7 +123,8 @@ export function AlibabaImporter() {
           }));
           toast.success(`${type} réécrit avec succès`);
         } else {
-          throw new Error("Contenu réécrit vide");
+          console.error("Rewrite successful but content is empty.");
+          toast.error("La réécriture a échoué: Le contenu généré est vide.");
         }
       } else {
         throw new Error(data?.error || "Erreur lors de la réécriture");

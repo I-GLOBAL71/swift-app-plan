@@ -10,6 +10,7 @@ import { CoolPaySettings } from "./CoolPaySettings";
 import { ApiSettings } from "./ApiSettings";
 import { PremiumSettings } from "./PremiumSettings";
 import SocialLinksSettings from "./SocialLinksSettings";
+import { AppearanceSettings } from "./AppearanceSettings";
 import { toast } from "sonner";
 import { Save, Settings, DollarSign, Palette, Star, Share2 } from "lucide-react";
 
@@ -97,10 +98,14 @@ export function SettingsManagement() {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             Général
+          </TabsTrigger>
+          <TabsTrigger value="appearance" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Apparence
           </TabsTrigger>
           <TabsTrigger value="api" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
@@ -173,6 +178,10 @@ export function SettingsManagement() {
               </form>
             </CardContent>
           </Card>
+          </TabsContent>
+
+          <TabsContent value="appearance">
+            <AppearanceSettings />
           </TabsContent>
 
           <TabsContent value="api">

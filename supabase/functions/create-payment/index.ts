@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
-const MYCOOLPAY_API_BASE = "https://api.my-coolpay.com";
+const MYCOOLPAY_API_BASE = "https://my-coolpay.com";
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -34,9 +34,7 @@ serve(async (req: Request) => {
     console.log("Environment variables loaded successfully.");
 
     const payload = {
-      amount,
-      currency,
-      reference,
+      transaction_amount: amount,
       reason,
       customer,
       callback_url: `${supabaseUrl}/functions/v1/payment-callback`,

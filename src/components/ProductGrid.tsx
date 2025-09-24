@@ -19,9 +19,10 @@ const ProductGrid = () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
-      slug: "sac-a-main-artisanal-en-cuir"
+      slug: "sac-a-main-artisanal-en-cuir",
+      fts: null
     },
-    { 
+    {
       id: "2",
       title: "Collier traditionnel en perles",
       description: "Collier traditionnel fait à la main",
@@ -34,9 +35,10 @@ const ProductGrid = () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
-      slug: "collier-traditionnel-en-perles"
+      slug: "collier-traditionnel-en-perles",
+      fts: null
     },
-    { 
+    {
       id: "3",
       title: "Bracelet en bois sculpté",
       description: "Bracelet artisanal en bois sculpté",
@@ -49,9 +51,10 @@ const ProductGrid = () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
-      slug: "bracelet-en-bois-sculpte"
+      slug: "bracelet-en-bois-sculpte",
+      fts: null
     },
-    { 
+    {
       id: "4",
       title: "Écharpe en tissu africain",
       description: "Écharpe colorée en tissu traditionnel",
@@ -64,9 +67,10 @@ const ProductGrid = () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
-      slug: "echarpe-en-tissu-africain"
+      slug: "echarpe-en-tissu-africain",
+      fts: null
     },
-    { 
+    {
       id: "5",
       title: "Boucles d'oreilles en bronze",
       description: "Élégantes boucles d'oreilles en bronze",
@@ -79,9 +83,10 @@ const ProductGrid = () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
-      slug: "boucles-oreilles-en-bronze"
+      slug: "boucles-oreilles-en-bronze",
+      fts: null
     },
-    { 
+    {
       id: "6",
       title: "Porte-monnaie en raphia",
       description: "Petit porte-monnaie en raphia tressé",
@@ -94,9 +99,10 @@ const ProductGrid = () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
-      slug: "porte-monnaie-en-raphia"
+      slug: "porte-monnaie-en-raphia",
+      fts: null
     },
-    { 
+    {
       id: "7",
       title: "Chaussures en cuir naturel",
       description: "Chaussures confortables en cuir",
@@ -109,9 +115,10 @@ const ProductGrid = () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
-      slug: "chaussures-en-cuir-naturel"
+      slug: "chaussures-en-cuir-naturel",
+      fts: null
     },
-    { 
+    {
       id: "8",
       title: "Ceinture artisanale",
       description: "Belle ceinture faite à la main",
@@ -124,7 +131,8 @@ const ProductGrid = () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
-      slug: "ceinture-artisanale"
+      slug: "ceinture-artisanale",
+      fts: null
     },
   ];
 
@@ -142,9 +150,10 @@ const ProductGrid = () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
-      slug: "robe-de-soiree-brodee-a-la-main"
+      slug: "robe-de-soiree-brodee-a-la-main",
+      fts: null
     },
-    { 
+    {
       id: "p2",
       title: "Sculpture en bois précieux",
       description: "Sculpture artisanale en bois précieux",
@@ -157,9 +166,10 @@ const ProductGrid = () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
-      slug: "sculpture-en-bois-precieux"
+      slug: "sculpture-en-bois-precieux",
+      fts: null
     },
-    { 
+    {
       id: "p3",
       title: "Bijou en or artisanal",
       description: "Bijou unique en or fait main",
@@ -172,7 +182,8 @@ const ProductGrid = () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
-      slug: "bijou-en-or-artisanal"
+      slug: "bijou-en-or-artisanal",
+      fts: null
     },
   ];
 
@@ -183,11 +194,11 @@ const ProductGrid = () => {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Package className="w-8 h-8 text-primary" />
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
               Nos Produits
             </h2>
           </div>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
             Découvrez notre sélection de produits de qualité, tous au même prix accessible de {globalPrice.toLocaleString()} FCFA
           </p>
         </div>
@@ -210,11 +221,11 @@ const ProductGrid = () => {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Crown className="w-8 h-8 text-premium" />
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
               Collection Premium
             </h2>
           </div>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
             Des pièces d'exception pour les occasions spéciales
           </p>
         </div>

@@ -70,17 +70,18 @@ function SwipeableCarouselContent({ images, productName, currentImageIndex, setC
   return (
     <>
       <CarouselContent
+        className="h-full"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         {images.map((image, index) => (
-          <CarouselItem key={index}>
-            <div className="relative">
+          <CarouselItem key={index} className="h-full">
+            <div className="relative h-full">
               <img
                 src={image}
                 alt={`${productName} - Image ${index + 1}`}
-                className="w-full h-64 object-cover rounded-lg"
+                className="w-full h-full object-contain rounded-lg"
                 onError={(e) => {
                   e.currentTarget.src = "/placeholder.svg";
                 }}
@@ -142,7 +143,7 @@ export function ProductImageCarousel({ images, productName, className, onSwipe }
         <img
           src={images[0]}
           alt={productName}
-          className="w-full h-64 object-cover rounded-lg"
+          className="w-full h-full object-contain rounded-lg"
           onError={(e) => {
             e.currentTarget.src = "/placeholder.svg";
           }}
@@ -153,7 +154,7 @@ export function ProductImageCarousel({ images, productName, className, onSwipe }
 
   return (
     <div className={`relative group ${className}`}>
-      <Carousel className="w-full">
+      <Carousel className="w-full h-full">
         <SwipeableCarouselContent 
           images={images}
           productName={productName}

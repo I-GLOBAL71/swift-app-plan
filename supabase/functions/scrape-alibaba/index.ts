@@ -20,7 +20,7 @@ interface RewriteRequest {
   prompt: string;
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -89,7 +89,7 @@ serve(async (req) => {
       const prompt = promptSetting?.value || getDefaultPrompt(rewriteData.type)
       
       // Call Gemini API
-      const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${setting.value}`, {
+      const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${setting.value}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,34 +111,41 @@ serve(async (req) => {
       const geminiData = await geminiResponse.json()
 
       // Robust extraction of text from various Gemini response shapes
-      const pickText = (d: any): string | null => {
+      const pickText = (d: any): string => {
         try {
-          if (!d) return null;
-          if (typeof d === 'string') return d;
+          if (!d) return '';
+          if (typeof d === 'string') return d.trim();
+      
           const candidates = d.candidates || [];
-          for (const c of candidates) {
-            const parts = c?.content?.parts || [];
-            if (Array.isArray(parts)) {
-              for (const p of parts) {
-                if (p && typeof p.text === 'string' && p.text.trim()) return p.text;
-              }
+          if (candidates.length > 0) {
+            const content = candidates[0].content || {};
+            const parts = content.parts || [];
+            if (parts.length > 0) {
+              return parts.map((p: any) => p.text || '').join('').trim();
             }
-            if (typeof c?.output_text === 'string' && c.output_text.trim()) return c.output_text;
           }
-          if (typeof d?.output_text === 'string' && d.output_text.trim()) return d.output_text;
-          return null;
-        } catch {
-          return null;
+          return '';
+        } catch (e) {
+          console.error('Error picking text:', e);
+          return '';
         }
       }
 
       const rewrittenContent = pickText(geminiData)?.trim() || ''
 
+      if (geminiData?.promptFeedback?.blockReason) {
+        throw new Error(`Le prompt a été bloqué: ${geminiData.promptFeedback.blockReason}`);
+      }
+
       if (!rewrittenContent) {
+        console.error('Gemini returned empty content. Full response:', JSON.stringify(geminiData, null, 2));
         return new Response(
-          JSON.stringify({ success: false, error: 'Empty rewrite result', debug: geminiData?.promptFeedback || null }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        )
+          JSON.stringify({
+            success: false,
+            error: 'Le contenu généré par l\'IA est vide. La réponse de l\'API ne contenait pas de texte.'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       return new Response(
@@ -148,9 +155,14 @@ serve(async (req) => {
     }
 
   } catch (error) {
+    console.error('Caught an unhandled error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      JSON.stringify({
+        error: 'An unhandled error occurred in the edge function.',
+        details: errorMessage
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }
 })
@@ -175,7 +187,7 @@ function extractImages(html: string): string[] {
   const mainImages = mainImageMatches.map(match => {
     const url = match.match(/(?:data-src|src)="([^"]*)"/)?.[1]
     return url?.startsWith('//') ? `https:${url}` : url
-  }).filter(Boolean)
+  }).filter(Boolean) as string[]
 
   // Extraction des images de description et de galerie
   const galleryImageMatches = html.match(/https:\/\/[^"'\s,]+\.(jpg|jpeg|png|webp)(?:\?[^"'\s]*)?/gi) || []
@@ -203,8 +215,8 @@ function extractVariants(html: string): any[] {
 
 function getDefaultPrompt(type: string): string {
   const prompts = {
-    title: "Réécris ce titre de produit en français de manière attrayante et professionnelle pour un site e-commerce. Le titre doit être accrocheur et optimisé pour le SEO.",
-    description: "Réécris cette description de produit en français de manière détaillée et engageante pour un site e-commerce. Mets en avant les avantages et caractéristiques principales.",
+    title: "Réécris ce titre de produit pour un site e-commerce. Le nouveau titre doit être en français, contenir entre 4 et 6 mots, être percutant, et optimisé pour le SEO. Ne fournis qu'une seule et unique proposition de titre, sans aucune explication, commentaire ou option supplémentaire. Le résultat doit être uniquement le titre réécrit.",
+    description: "Réécris cette description de produit pour un site e-commerce. La nouvelle description doit être en français, détaillée, engageante, et mettre en avant les avantages et caractéristiques principales. Ne fournis qu'une seule et unique proposition de description, sans aucune explication, commentaire ou option supplémentaire. Le résultat doit être uniquement la description réécrite.",
     keywords: "Génère une liste de mots-clés pertinents en français pour ce produit, séparés par des virgules. Focus sur les termes de recherche populaires.",
     synonyms: "Génère une liste de synonymes et termes alternatifs en français pour ce produit, séparés par des virgules. Inclus les variations linguistiques courantes."
   }

@@ -13,9 +13,10 @@ import { Tables } from "@/integrations/supabase/types";
 
 interface ProductCardProps {
   product: Tables<"products">;
+  variant?: 'hero' | 'default';
 }
 
-const ProductCard = ({ product }: ProductCardProps) => {
+const ProductCard = ({ product, variant = 'default' }: ProductCardProps) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { toast } = useToast();
@@ -63,36 +64,32 @@ const ProductCard = ({ product }: ProductCardProps) => {
   };
 
   return (
-    <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1" onClick={handleProductClick}>
-      <CardContent className="p-4">
-        <div className="aspect-square rounded-lg overflow-hidden mb-4 bg-muted">
-          <ProductImageCarousel 
+    <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col" onClick={handleProductClick}>
+      <CardContent className="p-4 flex flex-col flex-grow">
+        <div className="relative h-48 md:h-64 rounded-lg overflow-hidden mb-4 bg-muted">
+          <ProductImageCarousel
             images={images}
             productName={product.title}
             className="h-full"
             onSwipe={handleSwipe}
           />
+          {variant === 'hero' && (
+            <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/40 backdrop-blur-sm text-white">
+              <h3 className="font-semibold text-sm truncate">{product.title}</h3>
+              <p className="text-xs font-bold text-white/90">{product.price.toLocaleString()} FCFA</p>
+            </div>
+          )}
         </div>
         
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-lg line-clamp-2 flex-1">{product.title}</h3>
-            {product.is_premium && (
-              <Badge className="ml-2 bg-gradient-premium text-premium-foreground">
-                <Sparkles className="h-3 w-3 mr-1" />
-                Premium
-              </Badge>
-            )}
-          </div>
-          
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {product.description || ""}
-          </p>
-          
-          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-xl font-bold text-primary">
-              {product.price.toLocaleString()} FCFA
+        <div className="space-y-2 flex flex-col flex-grow justify-between">
+          {variant === 'default' && (
+            <div className="mb-2">
+              <h3 className="font-semibold text-sm text-foreground truncate">{product.title}</h3>
+              <p className="text-xs font-bold text-primary">{product.price.toLocaleString()} FCFA</p>
             </div>
+          )}
+          
+          <div className="flex items-center justify-end">
             <div className="flex items-center gap-2">
               <ShareButton product={{ id: product.id, title: product.title, slug: product.slug }} />
               <Button

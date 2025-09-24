@@ -10,6 +10,7 @@ import { ArrowLeft, ShoppingCart, Heart, Share2, Sparkles, Star } from "lucide-r
 import { toast } from "sonner";
 import { useCart } from "@/contexts/CartContext";
 import ProductCard from "@/components/ProductCard";
+import BackToProductsBanner from "@/components/BackToProductsBanner";
 
 type Product = Tables<'products'>;
 
@@ -318,6 +319,8 @@ export function ProductDetail() {
             <p className="text-muted-foreground text-center py-8">Aucun produit similaire trouvé pour le moment.</p>
           )}
         </div>
+
+        <BackToProductsBanner />
     </main>
   );
 }

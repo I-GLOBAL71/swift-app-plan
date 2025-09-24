@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import ProductCard from "@/components/ProductCard";
 import { toast } from "sonner";
-import { Package, ShoppingBag, ArrowRight, Star, Heart, Shield } from "lucide-react";
+import { Package, SearchX } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import PremiumAccessButton from "@/components/PremiumAccessButton";
 import { Product } from "@/lib/types";
@@ -11,18 +12,31 @@ const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { premiumSectionFrequency } = useSettings();
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search");
 
   useEffect(() => {
-    loadProducts();
-  }, []);
+    loadProducts(searchQuery);
+  }, [searchQuery]);
 
-  const loadProducts = async () => {
+  const loadProducts = async (query: string | null) => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
+      let queryBuilder = supabase
         .from("products")
         .select("*, slug")
         .eq("is_premium", false)
         .eq("is_active", true);
+
+      if (query) {
+        const plainQuery = query.split(/\s+/).join(" & ");
+        queryBuilder = queryBuilder.textSearch("fts", plainQuery, {
+          type: "plain",
+          config: "french_unaccent",
+        });
+      }
+
+      const { data, error } = await queryBuilder;
 
       if (error) throw error;
       setProducts(data as Product[] || []);
@@ -34,16 +48,41 @@ const Products = () => {
     }
   };
 
+  const renderEmptyState = () => {
+    if (searchQuery) {
+      return (
+        <div className="text-center py-16">
+          <SearchX className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-2xl font-bold mb-2">Aucun résultat</h3>
+          <p className="text-muted-foreground">
+            Nous n'avons trouvé aucun produit pour votre recherche "{searchQuery}".
+          </p>
+        </div>
+      );
+    }
+    return (
+      <div className="text-center py-16">
+        <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-2xl font-bold mb-2">Aucun produit disponible</h3>
+        <p className="text-muted-foreground">
+          Notre sélection de produits est en cours de préparation. Revenez bientôt !
+        </p>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-background min-h-screen">
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">
-            Découvrez Nos Trésors
+            {searchQuery ? `Résultats pour "${searchQuery}"` : "Découvrez Nos Trésors"}
           </h1>
-          <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground">
-            Chaque article est une promesse de qualité et d'innovation. Trouvez votre bonheur parmi notre sélection exclusive.
-          </p>
+          {!searchQuery && (
+            <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground">
+              Chaque article est une promesse de qualité et d'innovation. Trouvez votre bonheur parmi notre sélection exclusive.
+            </p>
+          )}
         </div>
         
         {loading ? (
@@ -75,13 +114,7 @@ const Products = () => {
             }, [] as JSX.Element[])}
           </div>
         ) : (
-          <div className="text-center py-16">
-            <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-2xl font-bold mb-2">Aucun produit disponible</h3>
-            <p className="text-muted-foreground">
-              Notre sélection de produits est en cours de préparation. Revenez bientôt !
-            </p>
-          </div>
+          renderEmptyState()
         )}
       </main>
     </div>

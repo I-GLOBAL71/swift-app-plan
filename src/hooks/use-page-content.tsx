@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Mock data to be used since the database is not available
 const MOCK_PAGES = {
-  about: { title: "À Propos de Swift App Plan", content: { description: "Bienvenue sur Swift App Plan, votre destination unique pour des produits innovants et de haute qualité...", team: "Notre équipe est composée de professionnels dévoués..." } },
+  about: { title: "À Propos de oneprice.shop", content: { description: "Bienvenue sur oneprice.shop, votre destination unique pour des produits innovants et de haute qualité...", team: "Notre équipe est composée de professionnels dévoués..." } },
   delivery: { title: "Politique de Livraison", content: { shipping_times: "5 à 7 jours ouvrables.", shipping_costs: "Gratuite pour les commandes de plus de 50€.", order_tracking: "Un email avec un numéro de suivi vous sera envoyé." } },
   returns: { title: "Politique de Retours", content: { return_conditions: "Vous disposez de 30 jours pour retourner un article.", return_procedure: "Veuillez contacter notre service client.", refunds: "Votre remboursement sera traité sous 5 à 10 jours." } },
   support: { title: "Contactez-nous", content: { email: "support@swiftappplan.com", phone: "+1 (234) 567-890" } },
