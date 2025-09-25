@@ -9,7 +9,9 @@ import { Eye, EyeOff, Save } from "lucide-react";
 
 export function ApiSettings() {
   const [geminiApiKey, setGeminiApiKey] = useState("");
-  const [showApiKey, setShowApiKey] = useState(false);
+  const [lygosApiKey, setLygosApiKey] = useState("");
+  const [showGeminiKey, setShowGeminiKey] = useState(false);
+  const [showLygosKey, setShowLygosKey] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -22,13 +24,15 @@ export function ApiSettings() {
       const { data, error } = await supabase
         .from("settings")
         .select("*")
-        .eq("key", "gemini_api_key")
-        .maybeSingle();
+        .in("key", ["gemini_api_key", "lygos_api_key"]);
 
       if (error) throw error;
 
       if (data) {
-        setGeminiApiKey(data.value || "");
+        const geminiSetting = data.find(s => s.key === "gemini_api_key");
+        const lygosSetting = data.find(s => s.key === "lygos_api_key");
+        setGeminiApiKey(geminiSetting?.value || "");
+        setLygosApiKey(lygosSetting?.value || "");
       }
     } catch (error) {
       console.error("Error loading settings:", error);
@@ -41,17 +45,25 @@ export function ApiSettings() {
   const saveSettings = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("settings")
-        .upsert({
+      const settingsToSave = [
+        {
           key: "gemini_api_key",
           value: geminiApiKey,
           description: "Clé API Google Gemini pour l'IA générative"
-        }, {
-          onConflict: 'key'
-        });
+        },
+        {
+          key: "lygos_api_key", 
+          value: lygosApiKey,
+          description: "Clé API Lygos App pour les paiements"
+        }
+      ];
 
-      if (error) throw error;
+      for (const setting of settingsToSave) {
+        const { error } = await supabase
+          .from("settings")
+          .upsert(setting, { onConflict: 'key' });
+        if (error) throw error;
+      }
 
       toast.success("Paramètres sauvegardés avec succès");
     } catch (error) {
@@ -86,7 +98,7 @@ export function ApiSettings() {
               <div className="relative flex-1">
                 <Input
                   id="gemini-api-key"
-                  type={showApiKey ? "text" : "password"}
+                  type={showGeminiKey ? "text" : "password"}
                   value={geminiApiKey}
                   onChange={(e) => setGeminiApiKey(e.target.value)}
                   placeholder="Entrez votre clé API Gemini"
@@ -97,9 +109,9 @@ export function ApiSettings() {
                   variant="ghost"
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowApiKey(!showApiKey)}
+                  onClick={() => setShowGeminiKey(!showGeminiKey)}
                 >
-                  {showApiKey ? (
+                  {showGeminiKey ? (
                     <EyeOff className="h-4 w-4" />
                   ) : (
                     <Eye className="h-4 w-4" />
@@ -117,6 +129,47 @@ export function ApiSettings() {
                 className="text-primary hover:underline"
               >
                 Google AI Studio
+              </a>
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="lygos-api-key">Clé API Lygos App</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  id="lygos-api-key"
+                  type={showLygosKey ? "text" : "password"}
+                  value={lygosApiKey}
+                  onChange={(e) => setLygosApiKey(e.target.value)}
+                  placeholder="Entrez votre clé API Lygos"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowLygosKey(!showLygosKey)}
+                >
+                  {showLygosKey ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Cette clé sera utilisée pour les paiements Lygos App.
+              Vous pouvez obtenir une clé sur{" "}
+              <a
+                href="https://docs.lygosapp.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                Lygos App Dashboard
               </a>
             </p>
           </div>
