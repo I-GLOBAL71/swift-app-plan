@@ -20,6 +20,7 @@ interface Product {
   keywords: string[];
   synonyms: string[];
   is_active: boolean;
+  slug: string;
   similar_products_type: 'auto' | 'manual';
   created_at: string;
 }

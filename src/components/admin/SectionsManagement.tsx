@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, GripVertical } from "lucide-react";
+import { Plus, Edit, Trash2, GripVertical, Settings, Package } from "lucide-react";
+import ProductSelector from "./ProductSelector";
 
 interface Section {
   id: string;
@@ -22,6 +24,7 @@ interface Section {
   max_products: number;
   show_premium_only: boolean;
   show_standard_only: boolean;
+  selection_mode: 'automatic' | 'manual' | 'mixed';
 }
 
 const SectionsManagement = () => {
@@ -40,7 +43,11 @@ const SectionsManagement = () => {
     max_products: 8,
     show_premium_only: false,
     show_standard_only: false,
+    selection_mode: "automatic" as 'automatic' | 'manual' | 'mixed',
   });
+
+  const [showProductSelector, setShowProductSelector] = useState(false);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
 
   useEffect(() => {
     loadSections();
@@ -54,7 +61,10 @@ const SectionsManagement = () => {
         .order("position", { ascending: true });
 
       if (error) throw error;
-      setSections(data || []);
+      setSections((data || []).map((section: any) => ({
+        ...section,
+        selection_mode: section.selection_mode || 'automatic'
+      })));
     } catch (error) {
       toast.error("Erreur lors du chargement des sections");
       console.error("Error loading sections:", error);
@@ -104,6 +114,7 @@ const SectionsManagement = () => {
       max_products: section.max_products,
       show_premium_only: section.show_premium_only,
       show_standard_only: section.show_standard_only,
+      selection_mode: section.selection_mode || 'automatic',
     });
     setShowForm(true);
   };
@@ -138,9 +149,15 @@ const SectionsManagement = () => {
       max_products: 8,
       show_premium_only: false,
       show_standard_only: false,
+      selection_mode: "automatic",
     });
     setEditingSection(null);
     setShowForm(false);
+  };
+
+  const handleProductSelector = (sectionId: string) => {
+    setSelectedSectionId(sectionId);
+    setShowProductSelector(true);
   };
 
   if (loading) {
@@ -271,17 +288,65 @@ const SectionsManagement = () => {
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Button type="submit">
-                {editingSection ? "Mettre à jour" : "Créer"}
-              </Button>
-              <Button type="button" variant="outline" onClick={resetForm}>
-                Annuler
-              </Button>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="selection_mode">Mode de sélection des produits</Label>
+                <Select
+                  value={formData.selection_mode}
+                  onValueChange={(value: 'automatic' | 'manual' | 'mixed') => 
+                    setFormData({ ...formData, selection_mode: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="automatic">Automatique (filtres)</SelectItem>
+                    <SelectItem value="manual">Manuel (sélection directe)</SelectItem>
+                    <SelectItem value="mixed">Mixte (filtres + sélection)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {formData.selection_mode === 'automatic' && "Les produits sont affichés selon les filtres définis"}
+                  {formData.selection_mode === 'manual' && "Vous sélectionnez manuellement les produits à afficher"}
+                  {formData.selection_mode === 'mixed' && "Combine filtres automatiques et sélection manuelle"}
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button type="submit">
+                  {editingSection ? "Mettre à jour" : "Créer"}
+                </Button>
+                <Button type="button" variant="outline" onClick={resetForm}>
+                  Annuler
+                </Button>
+              </div>
             </div>
           </form>
         </CardContent>
       </Card>
+    );
+  }
+
+  if (showProductSelector && selectedSectionId) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={() => setShowProductSelector(false)}>
+            ← Retour aux sections
+          </Button>
+          <div>
+            <h2 className="text-2xl font-bold">Gestion des Produits</h2>
+            <p className="text-muted-foreground">
+              Sélectionnez les produits pour cette section
+            </p>
+          </div>
+        </div>
+        <ProductSelector
+          sectionId={selectedSectionId}
+          onClose={() => setShowProductSelector(false)}
+        />
+      </div>
     );
   }
 
@@ -328,23 +393,33 @@ const SectionsManagement = () => {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${section.is_active ? "bg-green-500" : "bg-red-500"}`} />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(section)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(section.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${section.is_active ? "bg-green-500" : "bg-red-500"}`} />
+                      {(section.selection_mode === 'manual' || section.selection_mode === 'mixed') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleProductSelector(section.id)}
+                          title="Gérer les produits de la section"
+                        >
+                          <Package className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(section)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(section.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                 </div>
               </CardContent>
             </Card>

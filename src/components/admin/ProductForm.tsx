@@ -22,6 +22,7 @@ interface Product {
   keywords: string[];
   synonyms: string[];
   is_active: boolean;
+  slug: string;
   similar_products_type?: 'auto' | 'manual';
 }
 
@@ -34,15 +35,16 @@ interface ProductFormProps {
 export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) {
   const { globalPrice } = useSettings();
   const [formData, setFormData] = useState<Product>({
-    title: product?.title || "",
-    description: product?.description || "",
-    price: product?.price || globalPrice,
-    image_url: (Array.isArray(product?.image_url) ? product.image_url.filter(i => typeof i === 'string') : []) as string[],
-    is_premium: product?.is_premium || false,
-    keywords: Array.isArray(product?.keywords) ? product.keywords : [],
-    synonyms: Array.isArray(product?.synonyms) ? product.synonyms : [],
-    is_active: product?.is_active ?? true,
-    similar_products_type: product?.similar_products_type || 'auto',
+    title: "",
+    description: "",
+    price: 0,
+    image_url: [],
+    is_premium: false,
+    keywords: [],
+    synonyms: [],
+    is_active: true,
+    slug: "",
+    similar_products_type: 'auto',
   });
   const [loading, setLoading] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
@@ -88,7 +90,10 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
 
     try {
       let savedProduct;
-      const productDataToSave = { ...formData };
+      const productDataToSave = { 
+        ...formData,
+        slug: formData.slug || formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+      };
 
       if (product?.id) {
         // Update
