@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
+import { toImagesArray } from "@/lib/utils";
 
 interface Product {
   id?: string;
@@ -387,7 +388,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                         <div className="mt-2 border rounded-md max-h-60 overflow-y-auto">
                           {searchResults.map(p => (
                             <div key={p.id} onClick={() => addSimilarProduct(p)} className="p-2 hover:bg-accent cursor-pointer flex items-center gap-4">
-                              <img src={Array.isArray(p.image_url) ? p.image_url[0] : p.image_url || '/placeholder.svg'} alt={p.title} className="w-10 h-10 object-cover rounded" />
+                              <img src={(toImagesArray(p.image_url as unknown)[0]) || '/placeholder.svg'} alt={p.title} className="w-10 h-10 object-cover rounded" />
                               <div>
                                 <p className="font-medium">{p.title}</p>
                                 <p className="text-sm text-muted-foreground">{p.price} FCFA</p>

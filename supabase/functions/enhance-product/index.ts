@@ -161,7 +161,7 @@ Réponds uniquement en JSON avec cette structure exacte:
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message || 'Erreur lors de l\'amélioration avec l\'IA' 
+        error: (error instanceof Error ? error.message : 'Erreur lors de l\'amélioration avec l\'IA') 
       }),
       {
         status: 500,

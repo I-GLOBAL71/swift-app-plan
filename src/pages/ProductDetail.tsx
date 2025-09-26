@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toImagesArray } from "@/lib/utils";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
@@ -158,10 +159,7 @@ export function ProductDetail() {
     );
   }
 
-  const images: string[] = (Array.isArray(product.image_url)
-    ? product.image_url.filter((i): i is string => typeof i === 'string')
-    : (typeof product.image_url === 'string' ? [product.image_url] : [])
-  );
+  const images: string[] = toImagesArray(product.image_url as unknown);
 
   return (
     <main className="container mx-auto px-4 py-8">

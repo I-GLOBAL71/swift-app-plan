@@ -47,9 +47,10 @@ serve(async (req: Request) => {
     if (action === 'scrape') {
       // Scraping logic for Alibaba
       const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7'
+          }
       })
 
       if (!response.ok) {
@@ -74,31 +75,62 @@ serve(async (req: Request) => {
     }
 
     if (action === 'rewrite') {
-      // Get Gemini API key from settings (use admin client to bypass RLS)
-      const { data: setting, error: settingsError } = await adminClient
+      // Get Gemini API key from settings
+      let setting: { value?: string } | null = null;
+      let readError: any = null;
+
+      const userRead = await supabaseClient
         .from('settings')
         .select('value')
         .eq('key', 'gemini_api_key')
-        .single()
+        .single();
 
-      if (settingsError) {
-        throw new Error(`Failed to read settings: ${settingsError.message}`)
+      if (userRead.error) {
+        readError = userRead.error;
+      } else {
+        setting = userRead.data;
+      }
+
+      if ((!setting || !setting.value) && Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) {
+        const adminRead = await adminClient
+          .from('settings')
+          .select('value')
+          .eq('key', 'gemini_api_key')
+          .single();
+        if (adminRead.error) readError = adminRead.error; else setting = adminRead.data;
       }
 
       if (!setting?.value) {
-        throw new Error('Gemini API key not configured')
+        const reason = readError ? ` (${readError.message})` : '';
+        return new Response(
+          JSON.stringify({ success: false, error: `Clé API Gemini manquante${reason}` }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        );
       }
 
-      // Get rewrite prompt from settings (use admin client)
-      const { data: promptSetting, error: promptError } = await adminClient
+      // Get rewrite prompt from settings (try user client first)
+      let promptSetting: { value?: string } | null = null;
+      let promptReadError: any = null;
+
+      const userPromptRead = await supabaseClient
         .from('settings')
         .select('value')
         .eq('key', `prompt_${rewriteData.type}`)
-        .single()
+        .single();
 
-      if (promptError && promptError.code !== 'PGRST116') {
-        // Ignore "row not found" error, but surface any other
-        throw new Error(`Failed to read prompt setting: ${promptError.message}`)
+      if (userPromptRead.error) {
+        promptReadError = userPromptRead.error;
+      } else {
+        promptSetting = userPromptRead.data;
+      }
+
+      if ((!promptSetting || !promptSetting.value) && Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) {
+        const adminPromptRead = await adminClient
+          .from('settings')
+          .select('value')
+          .eq('key', `prompt_${rewriteData.type}`)
+          .single();
+        if (adminPromptRead.error) promptReadError = adminPromptRead.error; else promptSetting = adminPromptRead.data;
       }
 
       const prompt = promptSetting?.value || getDefaultPrompt(rewriteData.type)
@@ -168,6 +200,12 @@ serve(async (req: Request) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Default response for unknown action
+    return new Response(
+      JSON.stringify({ success: false, error: 'Invalid action' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+    )
 
   } catch (error) {
     console.error('Caught an unhandled error:', error);

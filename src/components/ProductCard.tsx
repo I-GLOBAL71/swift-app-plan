@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useRef } from "react";
 
 import { Tables } from "@/integrations/supabase/types";
+import { toImagesArray } from "@/lib/utils";
 
 interface ProductCardProps {
   product: Tables<"products">;
@@ -23,10 +24,7 @@ const ProductCard = ({ product, variant = 'default' }: ProductCardProps) => {
   const [justSwiped, setJustSwiped] = useState(false);
   const swipeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  const images: string[] = (Array.isArray(product.image_url)
-    ? product.image_url.filter((i): i is string => typeof i === 'string')
-    : (typeof product.image_url === 'string' ? [product.image_url] : [])
-  );
+  const images: string[] = toImagesArray(product.image_url as unknown);
 
   const handleSwipe = () => {
     setJustSwiped(true);

@@ -84,7 +84,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'Erreur lors de la vérification du paiement'
+        error: (error instanceof Error ? error.message : 'Erreur lors de la vérification du paiement')
       }),
       {
         status: 400,
