@@ -131,7 +131,8 @@ export function AlibabaImporter() {
       }
     } catch (error) {
       console.error("Error rewriting:", error);
-      toast.error(`Erreur lors de la réécriture: ${error.message}`);
+      const msg = error instanceof Error ? error.message : 'Erreur inconnue lors de la réécriture';
+      toast.error(`Erreur lors de la réécriture: ${msg}`);
     } finally {
       setRewriting(null);
     }

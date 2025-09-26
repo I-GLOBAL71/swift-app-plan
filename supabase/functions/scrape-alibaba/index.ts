@@ -26,14 +26,20 @@ serve(async (req: Request) => {
   }
 
   try {
+    // Create two clients: a user-scoped client (for user context if needed) and an admin client (service role) for privileged reads like settings
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: req.headers.get('Authorization') || '' },
         },
       }
+    )
+
+    const adminClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
     const { action, url, rewriteData } = await req.json()
@@ -68,23 +74,32 @@ serve(async (req: Request) => {
     }
 
     if (action === 'rewrite') {
-      // Get Gemini API key from settings
-      const { data: setting } = await supabaseClient
+      // Get Gemini API key from settings (use admin client to bypass RLS)
+      const { data: setting, error: settingsError } = await adminClient
         .from('settings')
         .select('value')
         .eq('key', 'gemini_api_key')
         .single()
 
+      if (settingsError) {
+        throw new Error(`Failed to read settings: ${settingsError.message}`)
+      }
+
       if (!setting?.value) {
         throw new Error('Gemini API key not configured')
       }
 
-      // Get rewrite prompt from settings
-      const { data: promptSetting } = await supabaseClient
+      // Get rewrite prompt from settings (use admin client)
+      const { data: promptSetting, error: promptError } = await adminClient
         .from('settings')
         .select('value')
         .eq('key', `prompt_${rewriteData.type}`)
         .single()
+
+      if (promptError && promptError.code !== 'PGRST116') {
+        // Ignore "row not found" error, but surface any other
+        throw new Error(`Failed to read prompt setting: ${promptError.message}`)
+      }
 
       const prompt = promptSetting?.value || getDefaultPrompt(rewriteData.type)
       
