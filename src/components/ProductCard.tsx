@@ -25,6 +25,13 @@ const ProductCard = ({ product, variant = 'default' }: ProductCardProps) => {
   const swipeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const images: string[] = toImagesArray(product.image_url as unknown);
+  
+  // Use priority image if defined, otherwise use first image
+  const priorityIndex = (product as any).priority_image_index || 0;
+  const orderedImages = images.length > 0 ? [
+    images[priorityIndex] || images[0],
+    ...images.filter((_, index) => index !== priorityIndex)
+  ] : images;
 
   const handleSwipe = () => {
     setJustSwiped(true);
@@ -50,7 +57,7 @@ const ProductCard = ({ product, variant = 'default' }: ProductCardProps) => {
         id: product.id,
         title: product.title,
         price: product.price,
-        image_url: images.length > 0 ? images : null,
+        image_url: orderedImages.length > 0 ? orderedImages : null,
         is_premium: product.is_premium || false,
     };
 
@@ -66,7 +73,7 @@ const ProductCard = ({ product, variant = 'default' }: ProductCardProps) => {
       <CardContent className="p-4 flex flex-col flex-grow">
         <div className="relative h-48 md:h-64 rounded-lg overflow-hidden mb-4 bg-muted">
           <ProductImageCarousel
-            images={images}
+            images={orderedImages}
             productName={product.title}
             className="h-full"
             onSwipe={handleSwipe}

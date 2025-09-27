@@ -6,6 +6,7 @@ import { Crown, Package, Sparkles, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Product } from "@/lib/types";
 import { useSettings } from "@/contexts/SettingsContext";
+import PremiumAccessButton from "@/components/PremiumAccessButton";
 
 interface Section {
   id: string;
@@ -27,7 +28,7 @@ const DynamicSections = () => {
   const [sections, setSections] = useState<Section[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const { productGridColumns } = useSettings();
+  const { productGridColumns, premiumSectionFrequency } = useSettings();
 
   useEffect(() => {
     loadData();
@@ -219,9 +220,28 @@ const DynamicSections = () => {
     );
   }
 
+  // Check if we should show premium button based on frequency
+  const standardProducts = products.filter(p => !p.is_premium);
+  const shouldShowPremiumButton = standardProducts.length >= premiumSectionFrequency;
+
   return (
     <div className="container mx-auto px-4 py-16 space-y-16">
-      {sections.map(renderSection)}
+      {sections.map((section, index) => {
+        const rendered = renderSection(section);
+        if (!rendered) return null;
+        
+        // Insert premium button after every N sections based on frequency
+        const showPremiumAfterSection = shouldShowPremiumButton && 
+          (index + 1) % Math.max(1, Math.floor(sections.length / 3)) === 0 && 
+          index < sections.length - 1;
+        
+        return (
+          <div key={section.id}>
+            {rendered}
+            {showPremiumAfterSection && <PremiumAccessButton withContainer={false} />}
+          </div>
+        );
+      })}
     </div>
   );
 };

@@ -100,9 +100,8 @@ Réponds uniquement en JSON avec cette structure exacte:
       }
     };
 
-    if (geminiModel.startsWith("gemini-2.5-flash")) {
-      body.thinkingConfig = { thinkingBudget: 512 };
-    }
+    // Note: thinkingConfig is only available for specific Gemini models
+    // Removed thinkingConfig as it's not supported in the current API version
 
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`,

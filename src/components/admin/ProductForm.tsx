@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
 import { toImagesArray } from "@/lib/utils";
+import { ImagePrioritySelector } from "./ImagePrioritySelector";
 
 interface Product {
   id?: string;
@@ -27,6 +28,7 @@ interface Product {
   similar_products_type?: 'auto' | 'manual';
   category_id?: string | null;
   sub_category_id?: string | null;
+  priority_image_index?: number;
 }
 
 interface ProductFormProps {
@@ -50,6 +52,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
     similar_products_type: 'auto',
     category_id: null,
     sub_category_id: null,
+    priority_image_index: 0,
   });
   const [loading, setLoading] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
@@ -85,6 +88,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
         similar_products_type: product.similar_products_type || 'auto',
         category_id: product.category_id || null,
         sub_category_id: product.sub_category_id || null,
+        priority_image_index: product.priority_image_index || 0,
       });
     }
   }, [product]);
@@ -400,10 +404,17 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                   onChange={(e) => setFormData({ ...formData, image_url: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
                   placeholder="https://example.com/image.jpg"
                 />
-              </div>
-            </div>
+               </div>
+               
+               {/* Image Priority Selector */}
+               <ImagePrioritySelector
+                 images={formData.image_url}
+                 priorityImageIndex={formData.priority_image_index || 0}
+                 onPriorityChange={(index) => setFormData({ ...formData, priority_image_index: index })}
+               />
+             </div>
 
-            <div className="space-y-4">
+             <div className="space-y-4">
               <div>
                 <Label htmlFor="price">Prix (FCFA) *</Label>
                 <Input
