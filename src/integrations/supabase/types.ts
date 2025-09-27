@@ -74,6 +74,42 @@ export type Database = {
         }
         Relationships: []
       }
+      categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      fcm_tokens: {
+        Row: {
+          created_at: string | null
+          id: number
+          token: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          token: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          token?: string
+        }
+        Relationships: []
+      }
       hero_slides: {
         Row: {
           button_link: string | null
@@ -273,6 +309,7 @@ export type Database = {
       }
       products: {
         Row: {
+          category_id: string | null
           created_at: string
           description: string | null
           fts: unknown | null
@@ -284,11 +321,13 @@ export type Database = {
           price: number
           similar_products_type: Database["public"]["Enums"]["similar_products_mode"]
           slug: string
+          sub_category_id: string | null
           synonyms: string[] | null
           title: string
           updated_at: string
         }
         Insert: {
+          category_id?: string | null
           created_at?: string
           description?: string | null
           fts?: unknown | null
@@ -300,11 +339,13 @@ export type Database = {
           price?: number
           similar_products_type?: Database["public"]["Enums"]["similar_products_mode"]
           slug: string
+          sub_category_id?: string | null
           synonyms?: string[] | null
           title: string
           updated_at?: string
         }
         Update: {
+          category_id?: string | null
           created_at?: string
           description?: string | null
           fts?: unknown | null
@@ -316,11 +357,27 @@ export type Database = {
           price?: number
           similar_products_type?: Database["public"]["Enums"]["similar_products_mode"]
           slug?: string
+          sub_category_id?: string | null
           synonyms?: string[] | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_sub_category_id_fkey"
+            columns: ["sub_category_id"]
+            isOneToOne: false
+            referencedRelation: "sub_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sections: {
         Row: {
@@ -374,6 +431,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          hero_grid_alternates_premium_products: boolean | null
           id: string
           key: string
           updated_at: string
@@ -382,6 +440,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          hero_grid_alternates_premium_products?: boolean | null
           id?: string
           key: string
           updated_at?: string
@@ -390,6 +449,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          hero_grid_alternates_premium_products?: boolean | null
           id?: string
           key?: string
           updated_at?: string
@@ -417,6 +477,35 @@ export type Database = {
           url?: string | null
         }
         Relationships: []
+      }
+      sub_categories: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

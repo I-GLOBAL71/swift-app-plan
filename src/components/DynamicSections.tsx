@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Crown, Package, Sparkles, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Product } from "@/lib/types";
+import { useSettings } from "@/contexts/SettingsContext";
 
 interface Section {
   id: string;
@@ -18,6 +19,7 @@ interface Section {
   max_products: number;
   show_premium_only: boolean;
   show_standard_only: boolean;
+  selection_mode: 'automatic' | 'manual' | 'mixed';
 }
 
 
@@ -25,6 +27,7 @@ const DynamicSections = () => {
   const [sections, setSections] = useState<Section[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const { productGridColumns } = useSettings();
 
   useEffect(() => {
     loadData();
@@ -47,7 +50,12 @@ const DynamicSections = () => {
       if (sectionsResult.error) throw sectionsResult.error;
       if (productsResult.error) throw productsResult.error;
 
-      setSections(sectionsResult.data || []);
+      const sectionsData = (sectionsResult.data || []).map((section: any) => ({
+        ...section,
+        selection_mode: section.selection_mode || 'automatic'
+      }));
+
+      setSections(sectionsData);
       setProducts(productsResult.data as Product[] || []);
     } catch (error) {
       console.error("Error loading data:", error);
@@ -63,6 +71,8 @@ const DynamicSections = () => {
     if (section.show_premium_only) {
       filtered = filtered.filter(p => p.is_premium);
     } else if (section.show_standard_only) {
+      filtered = filtered.filter(p => !p.is_premium);
+    } else if (section.selection_mode === 'automatic') {
       filtered = filtered.filter(p => !p.is_premium);
     }
 
@@ -95,10 +105,28 @@ const DynamicSections = () => {
     }
   };
 
+  const getGridColsClass = (cols: number) => {
+    switch (cols) {
+      case 1:
+        return 'grid-cols-1';
+      case 2:
+        return 'grid-cols-2';
+      case 3:
+        return 'grid-cols-2 md:grid-cols-3';
+      case 4:
+        return 'grid-cols-2 lg:grid-cols-4';
+      case 5:
+        return 'grid-cols-2 lg:grid-cols-5';
+      default:
+        return 'grid-cols-2 md:grid-cols-3';
+    }
+  };
+
   const renderSection = (section: Section) => {
     const filteredProducts = getFilteredProducts(section);
     const Icon = getSectionIcon(section.style_type);
     const backgroundClass = getSectionBackgroundClass(section.background_color);
+    const gridColsClass = getGridColsClass(productGridColumns);
     
     if (filteredProducts.length === 0) return null;
 
@@ -132,17 +160,19 @@ const DynamicSections = () => {
             </div>
           </div>
         ) : section.style_type === "featured" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className={`grid ${gridColsClass} gap-8 items-stretch`}>
             {filteredProducts.map((product) => (
-              <div key={product.id} className="transform hover:scale-105 transition-transform duration-300">
+              <div key={product.id} className="transform hover:scale-105 transition-transform duration-300 h-full">
                 <ProductCard product={product} />
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className={`grid ${gridColsClass} gap-6 items-stretch`}>
             {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <div key={product.id} className="h-full">
+                <ProductCard product={product} />
+              </div>
             ))}
           </div>
         )}

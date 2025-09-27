@@ -1,0 +1,135 @@
+Voici une documentation synthétique et pratique pour **implémenter les 4 modèles Gemini** que tu as listés (2.5 Flash, 2.5 Flash-Lite, 2.5 Pro, 1.5 Flash-8B), en supposant que tu as accès à l’API Gemini (via Google AI / Vertex AI). Je précise les **points essentiels**, les **id de modèles**, les limites techniques, et un exemple d’appel.
+
+> ⚠️ Note : je **ne garantis pas** que tous ces modèles sont toujours offerts dans la couche gratuite dans tous les contextes — cela dépend de ton compte / région / quotas — mais je base cela sur les documents officiels disponibles.
+
+---
+
+## 1. Détails techniques des modèles
+
+Voici ce que j’ai pu trouver pour chaque modèle :
+
+| Modèle                    | ID / nom à utiliser                        | Capacités / limites techniques principales                                                                                                                                                                                 | Remarques d’usage / notes                                                                                                     |
+| ------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **Gemini 2.5 Flash**      | `gemini-2.5-flash`                         | Entrée maximale : **1 048 576 tokens** ([Google AI for Developers][1]) <br>Sortie maximale : **65 536 tokens** ([Google AI for Developers][1]) <br>Multimodal (texte, image, vidéo, audio) ([Google AI for Developers][1]) | Modèle “premium” de la série 2.5 avec capacités de raisonnement (“thinking”). ([Google Cloud][2])                             |
+| **Gemini 2.5 Flash-Lite** | `gemini-2.5-flash-lite`                    | Même limites de contexte (1 048 576 input, 65 536 output) que Flash régulière selon le document modèle ([Google AI for Developers][1])                                                                                     | Version optimisée pour coût / haut débit — moins « lourd » que la version complète. ([Google AI for Developers][1])           |
+| **Gemini 2.5 Pro**        | (documenté dans la page “Meet the models”) | Version “la plus puissante / de raisonnement avancé” dans la série 2.5 ([Google AI for Developers][3])                                                                                                                     | Généralement utilisé pour les tâches complexes, potentiellement avec des quotas plus restreints                               |
+| **Gemini 1.5 Flash-8B**   | `gemini-1.5-flash-8b`                      | Variante “plus légère / plus rapide” du 1.5 Flash ; tarifs réduits ; limites de requêtes plus élevées. ([Google Developers Blog][4])                                                                                       | Document indique que ce modèle est “production ready” et accessible via API / Google AI Studio. ([Google Developers Blog][4]) |
+
+---
+
+## 2. Appel API commun pour tous les modèles
+
+L’API Gemini (au sein de Vertex AI ou via le point de terminaison “generativelanguage.googleapis.com”) offre des méthodes comme `generateContent` (ou `streamGenerateContent`) pour interroger un modèle. ([Google Cloud][5])
+
+### 2.1 Structure de la requête (format JSON)
+
+Voici un schéma simplifié que tu peux adapter :
+
+```json
+POST https://generativelanguage.googleapis.com/v1beta/models/{model-id}:generateContent
+Headers:
+  x-goog-api-key: TON_API_KEY
+  Content-Type: application/json
+
+Body:
+{
+  "contents": [
+    {
+      "parts": [
+        { "text": "Ton prompt ici" }
+      ]
+    }
+  ],
+  "temperature": 0.7,
+  "maxOutputTokens": 512,
+  // Optionnel selon modèle / usage :
+  "thinkingConfig": {
+    "thinkingBudget": 1024
+  }
+}
+```
+
+* **{model-id}** est une des chaînes comme `gemini-2.5-flash`, `gemini-2.5-flash-lite`, `gemini-2.5-pro`, `gemini-1.5-flash-8b`, etc.
+* Le paramètre `thinkingConfig` (ou budget de pensée) est pertinent pour les modèles de type “Flash” avec raisonnement interne (par exemple 2.5 Flash). Certains guides mentionnent ce paramètre pour 2.5 Flash. ([apidog][6])
+* On peut aussi utiliser `streamGenerateContent` pour obtenir la réponse progressivement (streaming) si nécessaire. ([Google Cloud][5])
+
+### 2.2 Exemple en Node.js
+
+Voici un exemple simple (Express) :
+
+```js
+const express = require('express');
+const fetch = require('node-fetch');
+const app = express();
+app.use(express.json());
+
+const API_KEY = process.env.GEMINI_API_KEY;
+
+async function askGemini(prompt, modelId) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`;
+  const body = {
+    contents: [
+      {
+        parts: [{ text: prompt }]
+      }
+    ],
+    temperature: 0.7,
+    maxOutputTokens: 512
+  };
+  // Si tu veux utiliser le thinking
+  if (modelId.startsWith("gemini-2.5-flash")) {
+    body.thinkingConfig = { thinkingBudget: 512 };
+  }
+
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'x-goog-api-key': API_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  const j = await resp.json();
+  if (!resp.ok) {
+    throw new Error(`Erreur API: ${resp.status} — ${JSON.stringify(j)}`);
+  }
+  // On suppose que la réponse a un champ “candidates”
+  return j.candidates?.[0]?.text || j.text;
+}
+
+app.post('/ask', async (req, res) => {
+  const { prompt, model } = req.body;
+  try {
+    const answer = await askGemini(prompt, model);
+    res.json({ answer });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.listen(3000, () => {
+  console.log("Serveur en écoute sur port 3000");
+});
+```
+
+Tu peux adapter cela pour Python, Java, etc.
+
+---
+
+## 3. Remarques sur la couche gratuite & quotas
+
+* Le document *Gemini Models* ne donne pas directement les quotas de la free tier pour chaque modèle, mais décrit les capacités techniques (taille de contexte, etc.). ([Google AI for Developers][1])
+* Le modèle **1.5 Flash-8B** est explicitement annoncé comme accessible gratuitement via Google AI Studio et l’API Gemini. ([Google Developers Blog][4])
+* Pour **2.5 Flash / Flash-Lite / Pro**, les documents mentionnent leurs capacités, mais **pas explicitement** les quotas gratuits. ([Google AI for Developers][3])
+* Le "Dynamic Shared Quota" (quota partagé dynamique) est évoqué dans les pages de quotas de Vertex AI pour les modèles génératifs. Cela signifie que les quotas peuvent varier selon l’usage global, la région, etc.
+
+---
+
+[1]: https://ai.google.dev/gemini-api/docs/models?utm_source=chatgpt.com "Gemini Models | Gemini API | Google AI for Developers"
+[2]: https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash?utm_source=chatgpt.com "Gemini 2.5 Flash | Generative AI on Vertex AI"
+[3]: https://ai.google.dev/gemini-api/docs?utm_source=chatgpt.com "Gemini API | Google AI for Developers"
+[4]: https://developers.googleblog.com/en/gemini-15-flash-8b-is-now-generally-available-for-use/?utm_source=chatgpt.com "Gemini 1.5 Flash-8B is now production ready - Google Developers Blog"
+[5]: https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference?utm_source=chatgpt.com "Generate content with the Gemini API in Vertex AI"
+[6]: https://apidog.com/blog/how-to-use-google-gemini-2-5-flash-via-api/?utm_source=chatgpt.com "How to Use Google Gemini 2.5 Flash via API"

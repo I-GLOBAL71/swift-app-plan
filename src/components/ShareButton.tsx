@@ -14,9 +14,10 @@ interface ShareButtonProps {
     title: string;
     slug: string;
   };
+  size?: "default" | "sm" | "lg" | "icon";
 }
 
-const ShareButton = ({ product }: ShareButtonProps) => {
+const ShareButton = ({ product, size = "icon" }: ShareButtonProps) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const productUrl = `${window.location.origin}/product/${product.slug}/${product.id}`;
@@ -87,7 +88,7 @@ const ShareButton = ({ product }: ShareButtonProps) => {
   
   const triggerButton = (
     <Button
-      size="icon"
+      size={size}
       variant="outline"
       onClick={(e) => e.stopPropagation()}
       className="shrink-0"
@@ -100,7 +101,7 @@ const ShareButton = ({ product }: ShareButtonProps) => {
   if (isMobile) {
     return (
       <Button
-        size="icon"
+        size={size}
         variant="outline"
         onClick={handleNativeShare}
         className="shrink-0"

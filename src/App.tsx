@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { requestForToken, onMessageListener } from "./firebase";
 import Index from "./pages/Index";
 import PremiumProducts from "./pages/PremiumProducts";
 import Products from "./pages/Products";
@@ -27,40 +29,52 @@ import InstallPWAPrompt from "./components/InstallPWAPrompt";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <SettingsProvider>
-        <CartProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <ScrollToTop />
-            <InstallPWAPrompt />
-            <Routes>
-              <Route path="/" element={<Layout><Index /></Layout>} />
-              <Route path="/products" element={<Layout><Products /></Layout>} />
-              <Route path="/premium" element={<Layout><PremiumProducts /></Layout>} />
-              <Route path="/product/:slug/:id" element={<Layout><ProductDetail /></Layout>} />
-              <Route path="/order-confirmation" element={<Layout><OrderConfirmation /></Layout>} />
-              <Route path="/order-tracking" element={<Layout><OrderTracking /></Layout>} />
-              <Route path="/about" element={<Layout><AboutPage /></Layout>} />
-              <Route path="/delivery" element={<Layout><DeliveryPage /></Layout>} />
-              <Route path="/returns" element={<Layout><ReturnsPage /></Layout>} />
-              <Route path="/support" element={<Layout><SupportPage /></Layout>} />
-              <Route path="/privacy-policy" element={<Layout><PrivacyPolicyPage /></Layout>} />
-              <Route path="/terms-of-service" element={<Layout><TermsOfServicePage /></Layout>} />
-              <Route path="/how-it-works" element={<Layout><HowItWorksPage /></Layout>} />
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<Layout><NotFound /></Layout>} />
-            </Routes>
-          </BrowserRouter>
-        </CartProvider>
-      </SettingsProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  useEffect(() => {
+    requestForToken();
+
+    onMessageListener()
+      .then((payload) => {
+        console.log(payload);
+      })
+      .catch((err) => console.log("failed: ", err));
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <SettingsProvider>
+          <CartProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <ScrollToTop />
+              <InstallPWAPrompt />
+              <Routes>
+                <Route path="/" element={<Layout><Index /></Layout>} />
+                <Route path="/products" element={<Layout><Products /></Layout>} />
+                <Route path="/premium" element={<Layout><PremiumProducts /></Layout>} />
+                <Route path="/product/:slug/:id" element={<Layout><ProductDetail /></Layout>} />
+                <Route path="/order-confirmation" element={<Layout><OrderConfirmation /></Layout>} />
+                <Route path="/order-tracking" element={<Layout><OrderTracking /></Layout>} />
+                <Route path="/about" element={<Layout><AboutPage /></Layout>} />
+                <Route path="/delivery" element={<Layout><DeliveryPage /></Layout>} />
+                <Route path="/returns" element={<Layout><ReturnsPage /></Layout>} />
+                <Route path="/support" element={<Layout><SupportPage /></Layout>} />
+                <Route path="/privacy-policy" element={<Layout><PrivacyPolicyPage /></Layout>} />
+                <Route path="/terms-of-service" element={<Layout><TermsOfServicePage /></Layout>} />
+                <Route path="/how-it-works" element={<Layout><HowItWorksPage /></Layout>} />
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin" element={<AdminDashboard />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<Layout><NotFound /></Layout>} />
+              </Routes>
+            </BrowserRouter>
+          </CartProvider>
+        </SettingsProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

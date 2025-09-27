@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -33,19 +33,21 @@ serve(async (req) => {
     const { title, description } = await req.json();
     console.log('Request data:', { title, description });
 
-    // Get Gemini API key from settings
+    // Get Gemini API key and model from settings
     const { data: settingsData, error: settingsError } = await supabase
       .from('settings')
-      .select('value')
-      .eq('key', 'gemini_api_key')
-      .single();
+      .select('key,value')
+      .in('key', ['gemini_api_key', 'gemini_model']);
 
     if (settingsError) {
-      console.error('Error fetching API key:', settingsError);
-      throw new Error('Clé API Gemini non configurée');
+      console.error('Error fetching settings:', settingsError);
+      throw new Error('Impossible de charger la configuration de l\'IA.');
     }
 
-    const geminiApiKey = settingsData?.value;
+    const settingsMap = new Map(settingsData.map(s => [s.key, s.value]));
+    const geminiApiKey = settingsMap.get('gemini_api_key');
+    const geminiModel = settingsMap.get('gemini_model') || 'gemini-1.5-flash-8b';
+
     if (!geminiApiKey) {
       throw new Error('Clé API Gemini non configurée');
     }
@@ -78,31 +80,38 @@ Réponds uniquement en JSON avec cette structure exacte:
 `;
 
     // Call Gemini API
-    console.log('Calling Gemini API...');
+    console.log(`Calling Gemini API with model: ${geminiModel}...`);
+
+    const body = {
+      contents: [
+        {
+          parts: [
+            {
+              text: enhancementPrompt
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 1024,
+      }
+    };
+
+    if (geminiModel.startsWith("gemini-2.5-flash")) {
+      body.thinkingConfig = { thinkingBudget: 512 };
+    }
+
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: enhancementPrompt
-                }
-              ]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          }
-        }),
+        body: JSON.stringify(body),
       }
     );
 

@@ -13,7 +13,12 @@
     "paths": {
       "@/*": ["../../src/*"]
     },
-    "types": ["@types/deno"]
+    "types": ["@types/deno"],
+    "lib": [
+      "deno.ns",
+      "dom",
+      "esnext"
+    ]
   },
   "include": ["./**/*.ts"]
 }

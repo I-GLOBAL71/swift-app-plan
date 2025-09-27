@@ -8,7 +8,7 @@ import ProductCard from './ProductCard';
 type HeroProduct = Tables<'products'>;
 
 const HeroProductGrid = () => {
-  const { heroGridRows, heroGridCols } = useSettings();
+  const { heroGridRows, heroGridCols, heroGridAlternatesPremiumProducts } = useSettings();
   const [allProducts, setAllProducts] = useState<HeroProduct[]>([]);
   const [visibleProducts, setVisibleProducts] = useState<HeroProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -19,25 +19,55 @@ const HeroProductGrid = () => {
   useEffect(() => {
     const fetchHeroProducts = async () => {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .not('image_url', 'is', null)
-        .limit(50);
+      setError(null);
 
-      if (error) {
-        setError(error.message);
-        console.error('Error fetching hero products:', error);
-      } else if (data) {
-        const shuffled = data.sort(() => 0.5 - Math.random());
-        setAllProducts(shuffled);
-        setVisibleProducts(shuffled.slice(0, gridCount));
+      try {
+        let finalProducts: HeroProduct[] = [];
+
+        if (heroGridAlternatesPremiumProducts) {
+          const [standardProductsRes, premiumProductsRes] = await Promise.all([
+            supabase.from('products').select('*').eq('is_premium', false).not('image_url', 'is', null).limit(25),
+            supabase.from('products').select('*').eq('is_premium', true).not('image_url', 'is', null).limit(25)
+          ]);
+
+          if (standardProductsRes.error) throw standardProductsRes.error;
+          if (premiumProductsRes.error) throw premiumProductsRes.error;
+
+          const standardProducts = standardProductsRes.data.sort(() => 0.5 - Math.random());
+          const premiumProducts = premiumProductsRes.data.sort(() => 0.5 - Math.random());
+          
+          let i = 0, j = 0;
+          while (i < standardProducts.length && j < premiumProducts.length) {
+            finalProducts.push(standardProducts[i++]);
+            finalProducts.push(premiumProducts[j++]);
+          }
+          finalProducts = finalProducts.concat(standardProducts.slice(i)).concat(premiumProducts.slice(j));
+
+        } else {
+          const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('is_premium', false)
+            .not('image_url', 'is', null)
+            .limit(50);
+          
+          if (error) throw error;
+          finalProducts = data.sort(() => 0.5 - Math.random());
+        }
+        
+        setAllProducts(finalProducts);
+        setVisibleProducts(finalProducts.slice(0, gridCount));
+
+      } catch (err: any) {
+        setError(err.message);
+        console.error('Error fetching hero products:', err);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     fetchHeroProducts();
-  }, [gridCount]);
+  }, [gridCount, heroGridAlternatesPremiumProducts]);
 
   useEffect(() => {
     const timer = 3000; // This will be configurable from the admin panel

@@ -5,32 +5,45 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Save, Palette } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 
 export function AppearanceSettings() {
-  const { heroStyle: currentHeroStyle, heroGridRows: currentGridRows, heroGridCols: currentGridCols, reloadSettings } = useSettings();
+  const {
+    heroStyle: currentHeroStyle,
+    heroGridRows: currentGridRows,
+    heroGridCols: currentGridCols,
+    heroGridAlternatesPremiumProducts: currentAlternatesPremium,
+    productGridColumns: currentProductGridColumns,
+    reloadSettings
+  } = useSettings();
   
   const [heroStyle, setHeroStyle] = useState<'carousel' | 'product_grid'>(currentHeroStyle);
   const [gridRows, setGridRows] = useState(currentGridRows);
   const [gridCols, setGridCols] = useState(currentGridCols);
+  const [alternatesPremium, setAlternatesPremium] = useState(currentAlternatesPremium);
+  const [productGridColumns, setProductGridColumns] = useState(currentProductGridColumns);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setHeroStyle(currentHeroStyle);
     setGridRows(currentGridRows);
     setGridCols(currentGridCols);
-  }, [currentHeroStyle, currentGridRows, currentGridCols]);
+    setAlternatesPremium(currentAlternatesPremium);
+  }, [currentHeroStyle, currentGridRows, currentGridCols, currentAlternatesPremium, currentProductGridColumns]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     const settingsToUpdate = [
-      { key: 'hero_style', value: heroStyle, description: 'Style de la section héros (carousel ou grille de produits)' },
-      { key: 'hero_grid_rows', value: gridRows.toString(), description: 'Nombre de lignes pour la grille de produits du héros' },
-      { key: 'hero_grid_cols', value: gridCols.toString(), description: 'Nombre de colonnes pour la grille de produits du héros' }
+      { key: 'hero_style', value: heroStyle },
+      { key: 'hero_grid_rows', value: gridRows.toString() },
+      { key: 'hero_grid_cols', value: gridCols.toString() },
+      { key: 'hero_grid_alternates_premium_products', value: alternatesPremium.toString() },
+      { key: 'product_grid_columns', value: productGridColumns.toString() }
     ];
 
     try {
@@ -61,6 +74,20 @@ export function AppearanceSettings() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
+            <Label>Nombre de colonnes pour les produits</Label>
+            <Input
+              id="product-grid-cols"
+              type="number"
+              value={productGridColumns}
+              onChange={(e) => setProductGridColumns(parseInt(e.target.value, 10) || 1)}
+              min="1"
+              max="5"
+            />
+            <p className="text-sm text-muted-foreground">
+              Définissez le nombre de colonnes pour afficher les produits sur les pages de la boutique.
+            </p>
+          </div>
           <div className="space-y-2">
             <Label>Style de la section "Héros"</Label>
             <RadioGroup
@@ -91,6 +118,14 @@ export function AppearanceSettings() {
                         <Label htmlFor="grid-cols">Colonnes</Label>
                         <Input id="grid-cols" type="number" value={gridCols} onChange={(e) => setGridCols(parseInt(e.target.value, 10) || 1)} min="1" />
                     </div>
+                </div>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="alternates-premium">Alterner avec les produits premium</Label>
+                    <Switch
+                        id="alternates-premium"
+                        checked={alternatesPremium}
+                        onCheckedChange={setAlternatesPremium}
+                    />
                 </div>
             </div>
           )}

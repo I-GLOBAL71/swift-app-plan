@@ -25,6 +25,8 @@ interface Product {
   is_active: boolean;
   slug: string;
   similar_products_type?: 'auto' | 'manual';
+  category_id?: string | null;
+  sub_category_id?: string | null;
 }
 
 interface ProductFormProps {
@@ -46,13 +48,46 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
     is_active: true,
     slug: "",
     similar_products_type: 'auto',
+    category_id: null,
+    sub_category_id: null,
   });
   const [loading, setLoading] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
+  const [categorizing, setCategorizing] = useState(false);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [subCategories, setSubCategories] = useState<{ id: string; name: string; category_id: string }[]>([]);
   const [manualSimilarProducts, setManualSimilarProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data: categoriesData, error: categoriesError } = await supabase.from('categories').select('id, name');
+      if (categoriesError) toast.error('Erreur lors du chargement des catégories');
+      else setCategories(categoriesData || []);
+
+      const { data: subCategoriesData, error: subCategoriesError } = await supabase.from('sub_categories').select('id, name, category_id');
+      if (subCategoriesError) toast.error('Erreur lors du chargement des sous-catégories');
+      else setSubCategories(subCategoriesData || []);
+    };
+
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    if (product) {
+      setFormData({
+        ...product,
+        image_url: Array.isArray(product.image_url) ? product.image_url : (product.image_url ? [product.image_url] : []),
+        keywords: Array.isArray(product.keywords) ? product.keywords : [],
+        synonyms: Array.isArray(product.synonyms) ? product.synonyms : [],
+        similar_products_type: product.similar_products_type || 'auto',
+        category_id: product.category_id || null,
+        sub_category_id: product.sub_category_id || null,
+      });
+    }
+  }, [product]);
 
   useEffect(() => {
     if (product?.id && product.similar_products_type === 'manual') {
@@ -85,14 +120,21 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
     }
   }, [product]);
 
+  useEffect(() => {
+    if (!formData.is_premium) {
+      setFormData(prev => ({ ...prev, price: 3000 }));
+    }
+  }, [formData.is_premium]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       let savedProduct;
-      const productDataToSave = { 
+      const productDataToSave = {
         ...formData,
+        price: formData.is_premium ? formData.price : 3000,
         slug: formData.slug || formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
       };
 
@@ -190,6 +232,60 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
     }
   };
 
+  const categorizeWithAI = async () => {
+    if (!formData.title.trim()) {
+      toast.error("Veuillez saisir un titre avant de suggérer une catégorie.");
+      return;
+    }
+    setCategorizing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("scrape-alibaba", {
+        body: {
+          action: 'categorize',
+          productTitle: formData.title,
+          productDescription: formData.description,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.category && data.subcategory) {
+        const { category: categoryName, subcategory: subcategoryName } = data;
+
+        // Find or create category
+        let { data: category, error: catError } = await supabase.from('categories').select('id, name').ilike('name', categoryName).single();
+        if (catError && catError.code !== 'PGRST116') throw catError; // PGRST116: no rows found
+        if (!category) {
+          const { data: newCategory, error: newCatError } = await supabase.from('categories').insert({ name: categoryName }).select('id, name').single();
+          if (newCatError) throw newCatError;
+          category = newCategory;
+          setCategories(prev => [...prev, category!]);
+        }
+
+        // Find or create sub-category
+        let { data: subcategory, error: subCatError } = await supabase.from('sub_categories').select('id, name, category_id').ilike('name', subcategoryName).eq('category_id', category.id).single();
+        if (subCatError && subCatError.code !== 'PGRST116') throw subCatError;
+        if (!subcategory) {
+          const { data: newSubcategory, error: newSubCatError } = await supabase.from('sub_categories').insert({ name: subcategoryName, category_id: category.id }).select('id, name, category_id').single();
+          if (newSubCatError) throw newSubCatError;
+          subcategory = newSubcategory;
+          setSubCategories(prev => [...prev, subcategory!]);
+        }
+        
+        setFormData(prev => ({ ...prev, category_id: category!.id, sub_category_id: subcategory!.id }));
+        toast.success(`Catégorie suggérée : ${category.name} > ${subcategory.name}`);
+
+      } else {
+        throw new Error(data.error || "La suggestion de catégorie a échoué.");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la suggestion de catégorie:", error);
+      toast.error(`Erreur: ${error.message}`);
+    } finally {
+      setCategorizing(false);
+    }
+  };
+
   const handleKeywordsChange = (value: string) => {
     const keywords = value.split(",").map((k) => k.trim()).filter(Boolean);
     setFormData({ ...formData, keywords });
@@ -272,11 +368,21 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                     variant="outline"
                     size="sm"
                     onClick={enhanceWithAI}
-                    disabled={enhancing}
+                    disabled={enhancing || categorizing}
                   >
                     <Wand2 className="h-4 w-4 mr-2" />
-                    {enhancing ? "Amélioration..." : "Améliorer tout avec IA"}
+                    {enhancing ? "Amélioration..." : "Améliorer contenu avec IA"}
                   </Button>
+                  <Button
+                   type="button"
+                   variant="outline"
+                   size="sm"
+                   onClick={categorizeWithAI}
+                   disabled={enhancing || categorizing}
+                 >
+                   <Sparkles className="h-4 w-4 mr-2" />
+                   {categorizing ? "Suggestion..." : "Suggérer une catégorie"}
+                 </Button>
                 </div>
                 <Textarea
                   id="description"
@@ -306,6 +412,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
                   required
+                  disabled={!formData.is_premium}
                 />
               </div>
 
@@ -346,6 +453,36 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                   placeholder="vêtement, habit, tenue"
                 />
               </div>
+              <div>
+                <Label htmlFor="category">Catégorie</Label>
+                <select
+                  id="category"
+                  value={formData.category_id || ''}
+                  onChange={(e) => setFormData({ ...formData, category_id: e.target.value, sub_category_id: null })}
+                  className="w-full p-2 border rounded"
+                >
+                  <option value="">Sélectionner une catégorie</option>
+                  {categories.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              {formData.category_id && (
+                <div>
+                  <Label htmlFor="subcategory">Sous-catégorie</Label>
+                  <select
+                    id="subcategory"
+                    value={formData.sub_category_id || ''}
+                    onChange={(e) => setFormData({ ...formData, sub_category_id: e.target.value })}
+                    className="w-full p-2 border rounded"
+                  >
+                    <option value="">Sélectionner une sous-catégorie</option>
+                    {subCategories.filter(sc => sc.category_id === formData.category_id).map(sc => (
+                      <option key={sc.id} value={sc.id}>{sc.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 

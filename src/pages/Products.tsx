@@ -7,24 +7,27 @@ import { Package, SearchX } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import PremiumAccessButton from "@/components/PremiumAccessButton";
 import { Product } from "@/lib/types";
+import BackToProductsBanner from "@/components/BackToProductsBanner";
 
 const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const { premiumSectionFrequency } = useSettings();
+  const { premiumSectionFrequency, productGridColumns } = useSettings();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("search");
+  const categoryQuery = searchParams.get("category");
+  const subcategoryQuery = searchParams.get("subcategory");
 
   useEffect(() => {
-    loadProducts(searchQuery);
-  }, [searchQuery]);
+    loadProducts(searchQuery, categoryQuery, subcategoryQuery);
+  }, [searchQuery, categoryQuery, subcategoryQuery]);
 
-  const loadProducts = async (query: string | null) => {
+  const loadProducts = async (query: string | null, category: string | null, subcategory: string | null) => {
     setLoading(true);
     try {
       let queryBuilder = supabase
         .from("products")
-        .select("*, slug")
+        .select("*, category:categories(name), sub_category:sub_categories(name)")
         .eq("is_premium", false)
         .eq("is_active", true);
 
@@ -34,6 +37,29 @@ const Products = () => {
           type: "plain",
           config: "french_unaccent",
         });
+      }
+
+      // New filtering logic
+      if (subcategory) {
+        const { data: subCategoryData, error: subCatError } = await supabase
+          .from('sub_categories')
+          .select('id')
+          .ilike('name', subcategory)
+          .single();
+        if (subCatError) throw new Error(`Sub-category not found: ${subCatError.message}`);
+        if (subCategoryData) {
+          queryBuilder = queryBuilder.eq('sub_category_id', subCategoryData.id);
+        }
+      } else if (category) {
+        const { data: categoryData, error: catError } = await supabase
+          .from('categories')
+          .select('id')
+          .ilike('name', category)
+          .single();
+        if (catError) throw new Error(`Category not found: ${catError.message}`);
+        if (categoryData) {
+          queryBuilder = queryBuilder.eq('category_id', categoryData.id);
+        }
       }
 
       const { data, error } = await queryBuilder;
@@ -71,12 +97,31 @@ const Products = () => {
     );
   };
 
+  const getGridColsClass = (cols: number) => {
+    switch (cols) {
+      case 1:
+        return 'grid-cols-1';
+      case 2:
+        return 'grid-cols-2';
+      case 3:
+        return 'grid-cols-2 md:grid-cols-3';
+      case 4:
+        return 'grid-cols-2 lg:grid-cols-4';
+      case 5:
+        return 'grid-cols-2 lg:grid-cols-5';
+      default:
+        return 'grid-cols-2 md:grid-cols-3';
+    }
+  };
+
+  const gridColsClass = getGridColsClass(productGridColumns);
+
   return (
     <div className="bg-background min-h-screen">
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">
-            {searchQuery ? `Résultats pour "${searchQuery}"` : "Découvrez Nos Trésors"}
+            {searchQuery ? `Résultats pour "${searchQuery}"` : (subcategoryQuery || categoryQuery || "Découvrez Nos Trésors")}
           </h1>
           {!searchQuery && (
             <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground">
@@ -90,12 +135,12 @@ const Products = () => {
             <div className="text-lg">Chargement des produits...</div>
           </div>
         ) : products.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+          <div className={`grid ${gridColsClass} gap-6 mb-12 items-stretch`}>
             {products.reduce((acc, product, index) => {
               acc.push(
                 <div
                   key={product.id}
-                  className="transform hover:scale-105 transition-transform duration-300"
+                  className="transform hover:scale-105 transition-transform duration-300 h-full"
                   style={{ animationDelay: `${index * 0.05}s` }}
                 >
                   <ProductCard product={product} />
@@ -104,8 +149,8 @@ const Products = () => {
 
               if ((index + 1) % premiumSectionFrequency === 0) {
                 acc.push(
-                  <div key={`premium-${index}`} className="md:col-span-2 lg:col-span-3 xl:col-span-4">
-                    <PremiumAccessButton />
+                  <div key={`premium-${index}`} className="col-span-full">
+                    <PremiumAccessButton withContainer={false} />
                   </div>
                 );
               }
@@ -115,6 +160,10 @@ const Products = () => {
           </div>
         ) : (
           renderEmptyState()
+        )}
+
+        {(categoryQuery || subcategoryQuery) && (
+          <BackToProductsBanner />
         )}
       </main>
     </div>

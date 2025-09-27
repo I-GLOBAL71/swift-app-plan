@@ -11,13 +11,15 @@ import { SettingsManagement } from "@/components/admin/SettingsManagement";
 import SectionsManagement from "@/components/admin/SectionsManagement";
 import HeroSlidesManagement from "@/components/admin/HeroSlidesManagement";
 import PagesManagement from "@/components/admin/PagesManagement";
-import { LogOut, Package, ShoppingCart, BarChart3, Settings, Layout, MapPin, Presentation, Menu, FileText } from "lucide-react";
+import { CategoriesManagement } from "@/components/admin/CategoriesManagement";
+import PushNotifications from "@/components/admin/PushNotifications";
+import { LogOut, Package, ShoppingCart, BarChart3, Settings, Layout, MapPin, Presentation, Menu, FileText, FolderTree, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
-type TabValue = "dashboard" | "hero" | "sections" | "products" | "orders" | "cities" | "pages" | "settings";
+type TabValue = "dashboard" | "hero" | "sections" | "products" | "categories" | "orders" | "cities" | "pages" | "notifications" | "settings";
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
@@ -114,9 +116,11 @@ export default function AdminDashboard() {
                   {renderTabButton("hero", "Hero", <Presentation className="h-4 w-4" />)}
                   {renderTabButton("sections", "Sections", <Layout className="h-4 w-4" />)}
                   {renderTabButton("products", "Produits", <Package className="h-4 w-4" />)}
+                  {renderTabButton("categories", "Catégories", <FolderTree className="h-4 w-4" />)}
                   {renderTabButton("orders", "Commandes", <ShoppingCart className="h-4 w-4" />)}
                   {renderTabButton("cities", "Villes", <MapPin className="h-4 w-4" />)}
                   {renderTabButton("pages", "Pages", <FileText className="h-4 w-4" />)}
+                  {renderTabButton("notifications", "Notifications", <Bell className="h-4 w-4" />)}
                   {renderTabButton("settings", "Paramètres", <Settings className="h-4 w-4" />)}
                 </div>
               </SheetContent>
@@ -140,6 +144,10 @@ export default function AdminDashboard() {
                   <Package className="h-4 w-4" />
                   Produits
                 </TabsTrigger>
+                <TabsTrigger value="categories" className="flex items-center gap-2">
+                  <FolderTree className="h-4 w-4" />
+                  Catégories
+                </TabsTrigger>
                 <TabsTrigger value="orders" className="flex items-center gap-2">
                   <ShoppingCart className="h-4 w-4" />
                   Commandes
@@ -151,6 +159,10 @@ export default function AdminDashboard() {
                 <TabsTrigger value="pages" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Pages
+                </TabsTrigger>
+                <TabsTrigger value="notifications" className="flex items-center gap-2">
+                  <Bell className="h-4 w-4" />
+                  Notifications
                 </TabsTrigger>
                 <TabsTrigger value="settings" className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
@@ -177,6 +189,10 @@ export default function AdminDashboard() {
             <ProductsManagement />
           </TabsContent>
 
+          <TabsContent value="categories">
+            <CategoriesManagement />
+          </TabsContent>
+
           <TabsContent value="orders">
             <OrdersManagement />
           </TabsContent>
@@ -191,6 +207,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="settings">
             <SettingsManagement />
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <PushNotifications />
           </TabsContent>
         </Tabs>
       </main>

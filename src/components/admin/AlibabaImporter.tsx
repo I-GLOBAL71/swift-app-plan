@@ -19,6 +19,7 @@ interface ScrapedProduct {
   variants?: any[];
   keywords?: string;
   synonyms?: string;
+  category?: { id: string; name: string };
 }
 
 interface ProductFormData {
@@ -31,6 +32,7 @@ interface ProductFormData {
   selectedImages: string[];
   keywords?: string;
   synonyms?: string;
+  categoryId?: string;
 }
 
 interface ProductImage {
@@ -53,6 +55,8 @@ export function AlibabaImporter() {
   const [rewrittenContent, setRewrittenContent] = useState<RewrittenContent>({});
   const [loading, setLoading] = useState(false);
   const [rewriting, setRewriting] = useState<string | null>(null);
+  const [categorizing, setCategorizing] = useState(false);
+  const [suggestedCategory, setSuggestedCategory] = useState<{ id: string; name: string } | null>(null);
   const [showProductForm, setShowProductForm] = useState(false);
   const [productFormData, setProductFormData] = useState<ProductFormData>({
     title: "",
@@ -80,6 +84,7 @@ export function AlibabaImporter() {
       if (data.success) {
         setScrapedProduct(data.product);
         setProductImages(data.product.images.map((img: string) => ({ url: img, selected: true })));
+        setSuggestedCategory(null);
         toast.success("Produit importé avec succès");
       } else {
         throw new Error(data.error || "Erreur lors de l'importation");
@@ -138,6 +143,49 @@ export function AlibabaImporter() {
     }
   };
 
+  const handleCategorize = async () => {
+    if (!scrapedProduct) return;
+
+    setCategorizing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('scrape-alibaba', {
+        body: {
+          action: 'categorize',
+          productTitle: rewrittenContent.title || scrapedProduct.title,
+          productDescription: rewrittenContent.description || scrapedProduct.description,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.category && data.subcategory) {
+        const { category: categoryName, subcategory: subcategoryName } = data;
+
+        // Find or create category
+        let { data: category, error: catError } = await supabase.from('categories').select('id, name').ilike('name', categoryName).single();
+        if (catError && catError.code !== 'PGRST116') throw catError;
+        if (!category) {
+          const { data: newCategory, error: newCatError } = await supabase.from('categories').insert({ name: categoryName }).select('id, name').single();
+          if (newCatError) throw newCatError;
+          category = newCategory;
+        }
+
+        // We just use the suggested category ID for the importer, subcategory is not handled here.
+        setSuggestedCategory(category);
+        toast.success(`Catégorie suggérée : ${category.name}`);
+
+      } else {
+        throw new Error(data.error || "La suggestion de catégorie a échoué.");
+      }
+    } catch (error) {
+      console.error("Error categorizing:", error);
+      const msg = error instanceof Error ? error.message : 'Erreur inconnue';
+      toast.error(`Erreur lors de la suggestion de catégorie: ${msg}`);
+    } finally {
+      setCategorizing(false);
+    }
+  };
+
   const handlePrepareProductForm = () => {
     if (!scrapedProduct) return;
 
@@ -153,7 +201,8 @@ export function AlibabaImporter() {
       variants: scrapedProduct.variants?.map(v => JSON.stringify(v)) || [],
       selectedImages,
       keywords: rewrittenContent.keywords || scrapedProduct.keywords || "",
-      synonyms: rewrittenContent.synonyms || scrapedProduct.synonyms || ""
+      synonyms: rewrittenContent.synonyms || scrapedProduct.synonyms || "",
+      categoryId: suggestedCategory?.id,
     });
     setShowProductForm(true);
   };
@@ -186,7 +235,8 @@ export function AlibabaImporter() {
         is_active: true,
         is_premium: productFormData.isPremium,
         slug: slug,
-        similar_products_type: 'manual' as const
+        similar_products_type: 'manual' as const,
+        category_id: productFormData.categoryId,
       };
 
       const { error } = await supabase
@@ -199,6 +249,7 @@ export function AlibabaImporter() {
       setScrapedProduct(null);
       setProductImages([]);
       setRewrittenContent({});
+      setSuggestedCategory(null);
       setProductFormData({
         title: "",
         description: "",
@@ -438,6 +489,32 @@ export function AlibabaImporter() {
                     placeholder="synonyme1, synonyme2, synonyme3..."
                     rows={2}
                   />
+                </div>
+              )}
+            </div>
+
+            {/* Catégorisation */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Catégorisation IA</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCategorize}
+                  disabled={categorizing}
+                >
+                  {categorizing ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-2" />
+                  )}
+                  Suggérer une catégorie
+                </Button>
+              </div>
+              {suggestedCategory && (
+                <div>
+                  <Badge variant="secondary" className="mb-2">Catégorie suggérée</Badge>
+                  <p className="text-sm font-medium p-2 bg-gray-100 rounded-md">{suggestedCategory.name}</p>
                 </div>
               )}
             </div>

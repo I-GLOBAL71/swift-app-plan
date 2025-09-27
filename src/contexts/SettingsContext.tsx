@@ -7,6 +7,9 @@ interface SettingsContextType {
   heroStyle: 'carousel' | 'product_grid';
   heroGridRows: number;
   heroGridCols: number;
+  heroGridAlternatesPremiumProducts: boolean;
+  geminiModel: string;
+  productGridColumns: number;
   loading: boolean;
   reloadSettings: () => Promise<void>;
 }
@@ -19,6 +22,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [heroStyle, setHeroStyle] = useState<'carousel' | 'product_grid'>('carousel');
   const [heroGridRows, setHeroGridRows] = useState<number>(2);
   const [heroGridCols, setHeroGridCols] = useState<number>(3);
+  const [heroGridAlternatesPremiumProducts, setHeroGridAlternatesPremiumProducts] = useState<boolean>(false);
+  const [geminiModel, setGeminiModel] = useState<string>('gemini-1.5-flash-8b');
+  const [productGridColumns, setProductGridColumns] = useState<number>(3);
   const [loading, setLoading] = useState(true);
 
   const fetchSettings = useCallback(async () => {
@@ -31,32 +37,16 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (data) {
-        const globalPriceSetting = data.find(s => s.key === 'global_product_price');
-        if (globalPriceSetting?.value) {
-          setGlobalPrice(parseInt(globalPriceSetting.value, 10));
-        }
-
-        const premiumSectionFrequencySetting = data.find(s => s.key === 'premium_section_frequency');
-        if (premiumSectionFrequencySetting?.value) {
-          setPremiumSectionFrequency(parseInt(premiumSectionFrequencySetting.value, 10));
-        }
-
-        const heroStyleSetting = data.find(s => s.key === 'hero_style');
-        if (heroStyleSetting?.value === 'product_grid') {
-          setHeroStyle('product_grid');
-        } else {
-          setHeroStyle('carousel');
-        }
-
-        const heroGridRowsSetting = data.find(s => s.key === 'hero_grid_rows');
-        if (heroGridRowsSetting?.value) {
-          setHeroGridRows(parseInt(heroGridRowsSetting.value, 10));
-        }
-
-        const heroGridColsSetting = data.find(s => s.key === 'hero_grid_cols');
-        if (heroGridColsSetting?.value) {
-          setHeroGridCols(parseInt(heroGridColsSetting.value, 10));
-        }
+        const settingsMap = new Map(data.map(s => [s.key, s.value]));
+        
+        setGlobalPrice(parseInt(settingsMap.get('global_product_price') || '3000', 10));
+        setPremiumSectionFrequency(parseInt(settingsMap.get('premium_section_frequency') || '5', 10));
+        setHeroStyle((settingsMap.get('hero_style') as 'carousel' | 'product_grid') || 'carousel');
+        setHeroGridRows(parseInt(settingsMap.get('hero_grid_rows') || '2', 10));
+        setHeroGridCols(parseInt(settingsMap.get('hero_grid_cols') || '3', 10));
+        setHeroGridAlternatesPremiumProducts(settingsMap.get('hero_grid_alternates_premium_products') === 'true');
+        setGeminiModel(settingsMap.get('gemini_model') || 'gemini-1.5-flash-8b');
+        setProductGridColumns(parseInt(settingsMap.get('product_grid_columns') || '3', 10));
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -74,7 +64,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <SettingsContext.Provider value={{ globalPrice, premiumSectionFrequency, heroStyle, heroGridRows, heroGridCols, loading, reloadSettings }}>
+    <SettingsContext.Provider value={{ globalPrice, premiumSectionFrequency, heroStyle, heroGridRows, heroGridCols, heroGridAlternatesPremiumProducts, geminiModel, productGridColumns, loading, reloadSettings }}>
       {children}
     </SettingsContext.Provider>
   );

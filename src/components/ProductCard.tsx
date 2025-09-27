@@ -62,7 +62,7 @@ const ProductCard = ({ product, variant = 'default' }: ProductCardProps) => {
   };
 
   return (
-    <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col" onClick={handleProductClick}>
+    <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col h-full" onClick={handleProductClick}>
       <CardContent className="p-4 flex flex-col flex-grow">
         <div className="relative h-48 md:h-64 rounded-lg overflow-hidden mb-4 bg-muted">
           <ProductImageCarousel
@@ -79,27 +79,23 @@ const ProductCard = ({ product, variant = 'default' }: ProductCardProps) => {
           )}
         </div>
         
-        <div className="space-y-2 flex flex-col flex-grow justify-between">
-          {variant === 'default' && (
-            <div className="mb-2">
-              <h3 className="font-semibold text-sm text-foreground truncate">{product.title}</h3>
-              <p className="text-xs font-bold text-primary">{product.price.toLocaleString()} FCFA</p>
-            </div>
-          )}
-          
-          <div className="flex items-center justify-end">
-            <div className="flex items-center gap-2">
-              <ShareButton product={{ id: product.id, title: product.title, slug: product.slug }} />
-              <Button
-                size="sm"
-                onClick={handleAddToCart}
-                className="flex items-center gap-1"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                Ajouter
-              </Button>
-            </div>
+        {variant === 'default' && (
+          <div className="pt-4">
+            <h3 className="font-semibold text-sm text-foreground truncate">{product.title}</h3>
+            <p className="text-xs font-bold text-primary">{product.price.toLocaleString()} FCFA</p>
           </div>
+        )}
+        <div className="flex-grow" /> {/* This spacer pushes the buttons to the bottom */}
+        <div className="flex items-center gap-2 pt-2">
+          <ShareButton product={{ id: product.id, title: product.title, slug: product.slug }} size="sm" />
+          <Button
+            size="sm"
+            onClick={handleAddToCart}
+            className="flex-1 flex items-center justify-center gap-1"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            Ajouter
+          </Button>
         </div>
       </CardContent>
     </Card>

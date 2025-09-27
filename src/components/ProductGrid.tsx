@@ -2,10 +2,31 @@ import ProductCard from "./ProductCard";
 import { Button } from "@/components/ui/button";
 import { Crown, Package } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
+import type { Product } from "@/lib/types";
 
 const ProductGrid = () => {
-  const { globalPrice } = useSettings();
-  const standardProducts = [
+  const { globalPrice, productGridColumns } = useSettings();
+
+  const getGridColsClass = (cols: number) => {
+    switch (cols) {
+      case 1:
+        return 'grid-cols-1';
+      case 2:
+        return 'grid-cols-2';
+      case 3:
+        return 'grid-cols-2 md:grid-cols-3';
+      case 4:
+        return 'grid-cols-2 lg:grid-cols-4';
+      case 5:
+        return 'grid-cols-2 lg:grid-cols-5';
+      default:
+        return 'grid-cols-2 md:grid-cols-3';
+    }
+  };
+
+  const gridColsClass = getGridColsClass(productGridColumns);
+
+  const standardProducts: Product[] = [
     {
       id: "1",
       title: "Sac à main artisanal en cuir",
@@ -20,7 +41,9 @@ const ProductGrid = () => {
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
       slug: "sac-a-main-artisanal-en-cuir",
-      fts: null
+      fts: null,
+      category_id: null,
+      sub_category_id: null
     },
     {
       id: "2",
@@ -36,7 +59,9 @@ const ProductGrid = () => {
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
       slug: "collier-traditionnel-en-perles",
-      fts: null
+      fts: null,
+      category_id: null,
+      sub_category_id: null
     },
     {
       id: "3",
@@ -52,7 +77,9 @@ const ProductGrid = () => {
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
       slug: "bracelet-en-bois-sculpte",
-      fts: null
+      fts: null,
+      category_id: null,
+      sub_category_id: null
     },
     {
       id: "4",
@@ -68,7 +95,9 @@ const ProductGrid = () => {
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
       slug: "echarpe-en-tissu-africain",
-      fts: null
+      fts: null,
+      category_id: null,
+      sub_category_id: null
     },
     {
       id: "5",
@@ -84,7 +113,9 @@ const ProductGrid = () => {
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
       slug: "boucles-oreilles-en-bronze",
-      fts: null
+      fts: null,
+      category_id: null,
+      sub_category_id: null
     },
     {
       id: "6",
@@ -100,7 +131,9 @@ const ProductGrid = () => {
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
       slug: "porte-monnaie-en-raphia",
-      fts: null
+      fts: null,
+      category_id: null,
+      sub_category_id: null
     },
     {
       id: "7",
@@ -116,7 +149,9 @@ const ProductGrid = () => {
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
       slug: "chaussures-en-cuir-naturel",
-      fts: null
+      fts: null,
+      category_id: null,
+      sub_category_id: null
     },
     {
       id: "8",
@@ -132,12 +167,14 @@ const ProductGrid = () => {
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
       slug: "ceinture-artisanale",
-      fts: null
+      fts: null,
+      category_id: null,
+      sub_category_id: null
     },
   ];
 
-  const premiumProducts = [
-    { 
+  const premiumProducts: Product[] = [
+    {
       id: "p1",
       title: "Robe de soirée brodée à la main",
       description: "Magnifique robe de soirée avec broderie artisanale",
@@ -151,7 +188,9 @@ const ProductGrid = () => {
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
       slug: "robe-de-soiree-brodee-a-la-main",
-      fts: null
+      fts: null,
+      category_id: null,
+      sub_category_id: null
     },
     {
       id: "p2",
@@ -167,7 +206,9 @@ const ProductGrid = () => {
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
       slug: "sculpture-en-bois-precieux",
-      fts: null
+      fts: null,
+      category_id: null,
+      sub_category_id: null
     },
     {
       id: "p3",
@@ -183,7 +224,9 @@ const ProductGrid = () => {
       updated_at: new Date().toISOString(),
       similar_products_type: "auto" as const,
       slug: "bijou-en-or-artisanal",
-      fts: null
+      fts: null,
+      category_id: null,
+      sub_category_id: null
     },
   ];
 
@@ -203,7 +246,7 @@ const ProductGrid = () => {
           </p>
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className={`grid ${gridColsClass} gap-4 sm:gap-6`}>
           {standardProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
@@ -230,7 +273,7 @@ const ProductGrid = () => {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
+        <div className={`grid ${gridColsClass} gap-4 sm:gap-6 mb-8`}>
           {premiumProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

@@ -101,10 +101,28 @@ export function ProductsManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Gestion des Produits</h2>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Ajouter un Produit
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={async () => {
+              const toastId = toast.loading("Lancement de la catégorisation en masse...");
+              try {
+                const { data, error } = await supabase.functions.invoke("backfill-categories");
+                if (error) throw error;
+                toast.success(data.message, { id: toastId });
+                loadProducts();
+              } catch (error) {
+                toast.error("Erreur lors de la catégorisation en masse.", { id: toastId });
+              }
+            }}
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            Catégoriser les produits non classés
+          </Button>
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Ajouter un Produit
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="list" className="space-y-6">
