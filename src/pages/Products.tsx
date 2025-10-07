@@ -8,11 +8,12 @@ import { useSettings } from "@/contexts/SettingsContext";
 import PremiumAccessButton from "@/components/PremiumAccessButton";
 import { Product } from "@/lib/types";
 import BackToProductsBanner from "@/components/BackToProductsBanner";
+import { CategoriesBar } from "@/components/CategoriesBar";
 
 const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const { premiumSectionFrequency, productGridColumns } = useSettings();
+  const { premiumSectionFrequency, productGridColumns, mobileProductGridColumns } = useSettings();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("search");
   const categoryQuery = searchParams.get("category");
@@ -25,9 +26,17 @@ const Products = () => {
   const loadProducts = async (query: string | null, category: string | null, subcategory: string | null) => {
     setLoading(true);
     try {
+      let selectStatement = "*, category:categories(name), sub_category:sub_categories(name)";
+      // Use !inner join to filter on the related table
+      if (subcategory) {
+        selectStatement = "*, category:categories(name), sub_category:sub_categories!inner(name)";
+      } else if (category) {
+        selectStatement = "*, category:categories!inner(name), sub_category:sub_categories(name)";
+      }
+
       let queryBuilder = supabase
         .from("products")
-        .select("*, category:categories(name), sub_category:sub_categories(name)")
+        .select(selectStatement)
         .eq("is_premium", false)
         .eq("is_active", true);
 
@@ -39,30 +48,15 @@ const Products = () => {
         });
       }
 
-      // New filtering logic
+      // Apply the filter on the joined table's name
       if (subcategory) {
-        const { data: subCategoryData, error: subCatError } = await supabase
-          .from('sub_categories')
-          .select('id')
-          .ilike('name', subcategory)
-          .single();
-        if (subCatError) throw new Error(`Sub-category not found: ${subCatError.message}`);
-        if (subCategoryData) {
-          queryBuilder = queryBuilder.eq('sub_category_id', subCategoryData.id);
-        }
+        queryBuilder = queryBuilder.ilike('sub_categories.name', subcategory);
       } else if (category) {
-        const { data: categoryData, error: catError } = await supabase
-          .from('categories')
-          .select('id')
-          .ilike('name', category)
-          .single();
-        if (catError) throw new Error(`Category not found: ${catError.message}`);
-        if (categoryData) {
-          queryBuilder = queryBuilder.eq('category_id', categoryData.id);
-        }
+        queryBuilder = queryBuilder.ilike('categories.name', category);
       }
 
-      const { data, error } = await queryBuilder;
+      // Order by creation date to see new products first
+      const { data, error } = await queryBuilder.order('created_at', { ascending: false });
 
       if (error) throw error;
       setProducts(data as Product[] || []);
@@ -97,24 +91,31 @@ const Products = () => {
     );
   };
 
-  const getGridColsClass = (cols: number) => {
-    switch (cols) {
-      case 1:
-        return 'grid-cols-1';
-      case 2:
-        return 'grid-cols-2';
-      case 3:
-        return 'grid-cols-2 md:grid-cols-3';
-      case 4:
-        return 'grid-cols-2 lg:grid-cols-4';
-      case 5:
-        return 'grid-cols-2 lg:grid-cols-5';
-      default:
-        return 'grid-cols-2 md:grid-cols-3';
+  const getGridColsClass = (cols: number, mobileCols?: number) => {
+    const getMobileColsClass = (cols: number) => {
+        switch (cols) {
+            case 1: return 'grid-cols-1';
+            case 2: return 'grid-cols-2';
+            case 3: return 'grid-cols-3';
+            default: return 'grid-cols-1';
+        }
     }
+
+    const desktopCols = (() => {
+        switch (cols) {
+            case 1: return 'sm:grid-cols-1';
+            case 2: return 'sm:grid-cols-2';
+            case 3: return 'md:grid-cols-3';
+            case 4: return 'lg:grid-cols-4';
+            case 5: return 'lg:grid-cols-5';
+            default: return 'md:grid-cols-3';
+        }
+    })();
+
+    return `${getMobileColsClass(mobileCols ?? 1)} ${desktopCols}`;
   };
 
-  const gridColsClass = getGridColsClass(productGridColumns);
+  const gridColsClass = getGridColsClass(productGridColumns, mobileProductGridColumns);
 
   return (
     <div className="bg-background min-h-screen">
@@ -128,6 +129,10 @@ const Products = () => {
               Chaque article est une promesse de qualité et d'innovation. Trouvez votre bonheur parmi notre sélection exclusive.
             </p>
           )}
+        </div>
+
+        <div className="mb-8">
+          <CategoriesBar />
         </div>
         
         {loading ? (
@@ -160,6 +165,18 @@ const Products = () => {
           </div>
         ) : (
           renderEmptyState()
+        )}
+
+        {searchQuery && products.length > 0 && (
+          <div className="text-center my-12">
+            <div className="p-8 border rounded-lg shadow-lg bg-card text-card-foreground animate-fade-in">
+              <h3 className="text-2xl font-bold mb-4">Vous n'avez pas trouvé votre bonheur ?</h3>
+              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                La recherche actuelle ne concerne que nos produits standards. Explorez notre collection exclusive de produits premium pour des articles encore plus exceptionnels.
+              </p>
+              <PremiumAccessButton />
+            </div>
+          </div>
         )}
 
         {(categoryQuery || subcategoryQuery) && (

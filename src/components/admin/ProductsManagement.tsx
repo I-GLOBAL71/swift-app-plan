@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { ProductForm } from "./ProductForm";
 import { AlibabaImporter } from "./AlibabaImporter";
-import { Plus, Edit, Trash2, Sparkles, Download, Package } from "lucide-react";
+import { Plus, Edit, Trash2, Sparkles, Download, Package, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -23,6 +23,8 @@ interface Product {
   slug: string;
   similar_products_type: 'auto' | 'manual';
   created_at: string;
+  category_id?: string | null;
+  sub_category_id?: string | null;
 }
 
 export function ProductsManagement() {
@@ -30,6 +32,7 @@ export function ProductsManagement() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [categorizingProductId, setCategorizingProductId] = useState<string | null>(null);
 
   useEffect(() => {
     loadProducts();
@@ -71,6 +74,48 @@ export function ProductsManagement() {
     setShowForm(false);
     setEditingProduct(null);
     loadProducts();
+  };
+
+  const handleRecategorize = async (product: Product) => {
+    setCategorizingProductId(product.id);
+    const toastId = toast.loading(`Re-catégorisation de "${product.title}"...`);
+    try {
+      const { data, error } = await supabase.functions.invoke("enhance-product", {
+        body: {
+          title: product.title,
+          description: product.description,
+          action: 'categorize',
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.category) {
+        const { category, subcategory } = data;
+        const { error: updateError } = await supabase
+          .from('products')
+          .update({
+            category_id: category.id,
+            sub_category_id: subcategory ? subcategory.id : null,
+          })
+          .eq('id', product.id);
+
+        if (updateError) throw updateError;
+
+        const toastMessage = subcategory
+          ? `Nouvelle catégorie : ${category.name} > ${subcategory.name}`
+          : `Nouvelle catégorie : ${category.name}`;
+        toast.success(toastMessage, { id: toastId });
+        loadProducts(); // Refresh the list to show updated data if needed
+      } else {
+        throw new Error(data.error || "La suggestion de catégorie a échoué.");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la re-catégorisation:", error);
+      toast.error(`Erreur: ${error.message}`, { id: toastId });
+    } finally {
+      setCategorizingProductId(null);
+    }
   };
 
   if (loading) {
@@ -202,6 +247,18 @@ export function ProductsManagement() {
                             onClick={() => handleDelete(product.id)}
                           >
                             <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRecategorize(product)}
+                            disabled={categorizingProductId === product.id}
+                          >
+                            {categorizingProductId === product.id ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4" />
+                            )}
                           </Button>
                         </div>
                       </TableCell>

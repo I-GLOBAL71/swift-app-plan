@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import ProductCard from "@/components/ProductCard";
+import ProductGrid from "@/components/ProductGrid";
 import { Button } from "@/components/ui/button";
 import { Package, ShoppingBag, ArrowRight, Star, Heart, Shield } from "lucide-react";
 import { toast } from "sonner";
@@ -10,9 +11,10 @@ import { Product } from "@/lib/types";
 interface StandardSectionProps {
   products: Product[];
   loading: boolean;
+  mobileProductColumns?: number;
 }
 
-const StandardSection = ({ products: standardProducts, loading }: StandardSectionProps) => {
+const StandardSection = ({ products: standardProducts, loading, mobileProductColumns }: StandardSectionProps) => {
 
   if (loading) {
     return (
@@ -38,7 +40,7 @@ const StandardSection = ({ products: standardProducts, loading }: StandardSectio
           
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-8">
             Découvrez notre sélection de produits de qualité, tous proposés au même prix accessible de{" "}
-            <span className="font-bold text-primary text-2xl">3,000 FCFA</span>. 
+            <span className="font-bold text-primary text-2xl">3,000 FCFA</span>.
             Une expérience d'achat simplifiée pour tous.
           </p>
 
@@ -73,33 +75,23 @@ const StandardSection = ({ products: standardProducts, loading }: StandardSectio
         {/* Products Grid */}
         {standardProducts.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
-              {standardProducts.map((product, index) => (
-                <div 
-                  key={product.id}
-                  className="transform hover:scale-105 transition-transform duration-300"
-                  style={{ animationDelay: `${index * 0.05}s` }}
-                >
-                  <ProductCard product={product} />
-                </div>
-              ))}
-            </div>
+            <ProductGrid products={standardProducts} mobileProductColumns={mobileProductColumns} />
 
             {/* CTA Section */}
-            <div className="text-center bg-card/50 rounded-2xl p-8 border border-primary/20">
+            <div className="text-center bg-card/50 rounded-2xl p-8 border border-primary/20 mt-12">
               <h3 className="text-2xl font-bold text-foreground mb-4">
                 Des milliers de produits vous attendent !
               </h3>
               <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
                 Explorez notre catalogue complet et trouvez le produit parfait au prix qui vous convient.
               </p>
-              <a href="/products">
-                <Button variant="outline" size="lg" className="group w-full sm:w-auto">
+              <Button asChild variant="outline" size="lg" className="group w-full sm:w-auto">
+                <Link to="/products">
                   <Package className="w-5 h-5 mr-2" />
                   Voir Tous les Produits
                   <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </a>
+                </Link>
+              </Button>
             </div>
           </>
         ) : (

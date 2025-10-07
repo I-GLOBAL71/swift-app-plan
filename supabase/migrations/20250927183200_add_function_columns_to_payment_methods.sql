@@ -1,0 +1,1 @@
+-- This migration has been consolidated into 20250927183000_update_coolpay_payment_method.sql

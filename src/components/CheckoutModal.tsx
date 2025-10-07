@@ -9,13 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { CoolPayModal } from './CoolPayModal';
 import { LygosPayModal } from './LygosPayModal';
+import { PaymentLinkModal } from './PaymentLinkModal';
 import { ShoppingCart, MapPin, CreditCard, Truck, Phone, Mail, User, Trash2 } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface Product {
-  id: string;
+  id:string;
   title: string;
   price: number;
   image_url: string | string[];
@@ -41,27 +42,33 @@ interface CheckoutModalProps {
   onOrderComplete: () => void;
 }
 
-type PaymentMethod = 'cash_on_delivery' | 'coolpay' | 'lygos';
-
 export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModalProps) {
   const { cartItems, totalPrice, clearCart, removeFromCart } = useCart();
+  const { paymentMethods } = useSettings();
   const [cities, setCities] = useState<City[]>([]);
   const [selectedCity, setSelectedCity] = useState<string>('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash_on_delivery');
+  const [paymentMethod, setPaymentMethod] = useState<string>('Cash on Delivery');
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     phone: '',
     email: ''
   });
-  const [showCoolPayModal, setShowCoolPayModal] = useState(false);
   const [showLygosModal, setShowLygosModal] = useState(false);
+  const [showPaymentLinkModal, setShowPaymentLinkModal] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const selectedCityData = cities.find(c => c.id === selectedCity);
   const isPaymentRequired = selectedCityData?.payment_required_before_shipping || false;
-  const effectivePaymentMethod = isPaymentRequired ? paymentMethod === 'cash_on_delivery' ? 'lygos' : paymentMethod : paymentMethod;
+  
+  const onlinePaymentMethods = paymentMethods.filter(pm => pm.name.toLowerCase() !== 'cash on delivery');
+  const defaultOnlineMethod = onlinePaymentMethods.length > 0 ? onlinePaymentMethods[0].name : '';
+
+  const effectivePaymentMethod = isPaymentRequired
+    ? (paymentMethod.toLowerCase() === 'cash on delivery' ? defaultOnlineMethod : paymentMethod)
+    : paymentMethod;
 
   useEffect(() => {
     if (isOpen) {
@@ -128,11 +135,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
         city_id: selectedCity,
         expected_delivery_date: expectedDeliveryDate.toISOString(),
         payment_method: effectivePaymentMethod,
-        notes: `Ville: ${selectedCityData?.name}, Paiement: ${
-          effectivePaymentMethod === 'coolpay' ? 'En ligne (CoolPay)' : 
-          effectivePaymentMethod === 'lygos' ? 'En ligne (Lygos)' : 
-          'À la livraison'
-        }`
+        notes: `Ville: ${selectedCityData?.name}, Paiement: ${effectivePaymentMethod}`
       }])
       .select('id')
       .single();
@@ -158,25 +161,27 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
     setLoading(true);
     try {
       // Si paiement en ligne est sélectionné OU requis pour cette ville
-      if (effectivePaymentMethod === 'coolpay') {
+      if (effectivePaymentMethod.toLowerCase() !== 'cash on delivery') {
         const newOrderId = await createOrder('pending_payment');
         if (newOrderId) {
           setOrderId(newOrderId);
-          setShowCoolPayModal(true);
-          // Ne pas finaliser ici - attendre le succès du paiement
+          // Generate payment link for any online method
+          const { data, error } = await supabase.functions.invoke('generate-payment-link', {
+            body: { orderId: newOrderId },
+          });
+
+          if (error) {
+            throw new Error(`Erreur lors de la génération du lien de paiement: ${error.message}`);
+          }
+
+          setPaymentUrl(data.paymentUrl);
+          setShowPaymentLinkModal(true);
+          onClose(); // Close the checkout modal
         }
-      } else if (effectivePaymentMethod === 'lygos') {
-        const newOrderId = await createOrder('pending_payment');
-        if (newOrderId) {
-          setOrderId(newOrderId);
-          setShowLygosModal(true);
-          // Ne pas finaliser ici - attendre le succès du paiement
-        }
-      } else {
-        // Seulement pour paiement à la livraison (cash_on_delivery)
+      } else { // Cash on Delivery
         const newOrderId = await createOrder('pending');
         if (newOrderId) {
-          clearCart(); // Vider le panier seulement après confirmation
+          clearCart();
           toast({
             title: "Commande confirmée !",
             description: "Votre commande a été enregistrée. Paiement à la livraison.",
@@ -360,55 +365,29 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
                 Méthode de paiement
               </h3>
               <div className="space-y-2">
-                {!isPaymentRequired && (
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="cash_on_delivery"
-                      name="payment_method"
-                      value="cash_on_delivery"
-                      checked={effectivePaymentMethod === 'cash_on_delivery'}
-                      onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                      className="w-4 h-4"
-                    />
-                    <Label htmlFor="cash_on_delivery" className="flex items-center gap-2">
-                      <Truck className="w-4 h-4" />
-                      Paiement à la livraison
-                    </Label>
-                  </div>
-                )}
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="coolpay"
-                      name="payment_method"
-                      value="coolpay"
-                      checked={effectivePaymentMethod === 'coolpay'}
-                      onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                      disabled={isPaymentRequired}
-                      className="w-4 h-4"
-                    />
-                    <Label htmlFor="coolpay" className="flex items-center gap-2">
-                      <CreditCard className="w-4 h-4" />
-                      Paiement en ligne (CoolPay)
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="lygos"
-                      name="payment_method"
-                      value="lygos"
-                      checked={effectivePaymentMethod === 'lygos'}
-                      onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                      disabled={isPaymentRequired}
-                      className="w-4 h-4"
-                    />
-                    <Label htmlFor="lygos" className="flex items-center gap-2">
-                      <CreditCard className="w-4 h-4" />
-                      Paiement en ligne (Lygos Pay)
-                    </Label>
-                  </div>
+                {paymentMethods.map((method) => {
+                  const isCashOnDelivery = method.name.toLowerCase() === 'cash on delivery';
+                  if (isPaymentRequired && isCashOnDelivery) {
+                    return null; // Hide cash on delivery if payment is required
+                  }
+                  return (
+                    <div key={method.id} className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id={method.id}
+                        name="payment_method"
+                        value={method.name}
+                        checked={effectivePaymentMethod === method.name}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="w-4 h-4"
+                      />
+                      <Label htmlFor={method.id} className="flex items-center gap-2">
+                        {isCashOnDelivery ? <Truck className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />}
+                        {method.name}
+                      </Label>
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -439,7 +418,7 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
           <div className="flex gap-2">
             <Button
               onClick={handleSubmitOrder}
-              disabled={loading || showCoolPayModal || showLygosModal || !selectedCity || !customerInfo.name || !customerInfo.phone}
+              disabled={loading || showLygosModal || !selectedCity || !customerInfo.name || !customerInfo.phone}
               className="flex-1"
             >
               {loading ? 'Traitement...' : 'Confirmer la commande'}
@@ -451,25 +430,16 @@ export function CheckoutModal({ isOpen, onClose, onOrderComplete }: CheckoutModa
         </div>
       </ResponsiveDialog>
 
-      <CoolPayModal
-        isOpen={showCoolPayModal}
+      <PaymentLinkModal
+        isOpen={showPaymentLinkModal}
         onClose={() => {
-          // Empêcher la fermeture si le paiement est requis pour cette ville
-          if (isPaymentRequired) {
-            toast({
-              title: "Paiement requis",
-              description: "Vous devez effectuer le paiement pour finaliser votre commande.",
-              variant: "destructive",
-            });
-            return;
+          setShowPaymentLinkModal(false);
+          // Redirect to order confirmation page after closing the final modal
+          if (orderId) {
+            window.location.href = `/order-confirmation?orderId=${orderId}`;
           }
-          setShowCoolPayModal(false);
-          setOrderId(null);
         }}
-        amount={totalPrice}
-        shippingFee={shippingFee}
-        onSuccess={handlePaymentSuccess}
-        orderId={orderId}
+        paymentUrl={paymentUrl}
       />
 
       <LygosPayModal

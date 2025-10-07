@@ -9,9 +9,13 @@ serve(async (req) => {
   }
 
   try {
-    const { order_id } = await req.json();
+    const { payment_id, order_id } = await req.json();
 
-    console.log('Checking Lygos payment status for order:', order_id);
+    if (!payment_id || !order_id) {
+      throw new Error('payment_id and order_id are required.');
+    }
+
+    console.log('Checking Lygos payment status for payment_id:', payment_id, 'and order_id:', order_id);
 
     // Récupérer la clé API Lygos depuis Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -33,7 +37,7 @@ serve(async (req) => {
     }
 
     // Vérifier le statut du paiement
-    const statusResponse = await fetch(`${LYGOS_PAYIN_URL}/${order_id}`, {
+    const statusResponse = await fetch(`${LYGOS_PAYIN_URL}/${payment_id}`, {
       method: 'GET',
       headers: {
         'api-key': lygosApiKey
@@ -71,7 +75,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         status: statusData.status,
-        order_id: statusData.order_id
+        order_id: order_id
       }),
       {
         status: 200,

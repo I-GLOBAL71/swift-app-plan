@@ -17,6 +17,7 @@ export function AppearanceSettings() {
     heroGridCols: currentGridCols,
     heroGridAlternatesPremiumProducts: currentAlternatesPremium,
     productGridColumns: currentProductGridColumns,
+    mobileProductGridColumns: currentMobileProductGridColumns,
     reloadSettings
   } = useSettings();
   
@@ -25,6 +26,7 @@ export function AppearanceSettings() {
   const [gridCols, setGridCols] = useState(currentGridCols);
   const [alternatesPremium, setAlternatesPremium] = useState(currentAlternatesPremium);
   const [productGridColumns, setProductGridColumns] = useState(currentProductGridColumns);
+  const [mobileProductGridColumns, setMobileProductGridColumns] = useState(currentMobileProductGridColumns);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -32,7 +34,8 @@ export function AppearanceSettings() {
     setGridRows(currentGridRows);
     setGridCols(currentGridCols);
     setAlternatesPremium(currentAlternatesPremium);
-  }, [currentHeroStyle, currentGridRows, currentGridCols, currentAlternatesPremium, currentProductGridColumns]);
+    setMobileProductGridColumns(currentMobileProductGridColumns);
+  }, [currentHeroStyle, currentGridRows, currentGridCols, currentAlternatesPremium, currentProductGridColumns, currentMobileProductGridColumns]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +46,8 @@ export function AppearanceSettings() {
       { key: 'hero_grid_rows', value: gridRows.toString() },
       { key: 'hero_grid_cols', value: gridCols.toString() },
       { key: 'hero_grid_alternates_premium_products', value: alternatesPremium.toString() },
-      { key: 'product_grid_columns', value: productGridColumns.toString() }
+      { key: 'product_grid_columns', value: productGridColumns.toString() },
+      { key: 'mobile_product_grid_columns', value: mobileProductGridColumns.toString() }
     ];
 
     try {
@@ -86,6 +90,20 @@ export function AppearanceSettings() {
             />
             <p className="text-sm text-muted-foreground">
               Définissez le nombre de colonnes pour afficher les produits sur les pages de la boutique.
+            </p>
+          </div>
+          <div className="space-y-4">
+            <Label>Nombre de colonnes pour les produits (Mobile)</Label>
+            <Input
+              id="mobile-product-grid-cols"
+              type="number"
+              value={mobileProductGridColumns}
+              onChange={(e) => setMobileProductGridColumns(parseInt(e.target.value, 10) || 1)}
+              min="1"
+              max="3"
+            />
+            <p className="text-sm text-muted-foreground">
+              Définissez le nombre de colonnes pour afficher les produits sur les appareils mobiles.
             </p>
           </div>
           <div className="space-y-2">

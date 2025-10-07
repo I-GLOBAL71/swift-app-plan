@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Download, Sparkles, Save, RefreshCw, ArrowLeft } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { ImagePrioritySelector } from "./ImagePrioritySelector";
 
 interface ScrapedProduct {
   title: string;
@@ -33,6 +34,7 @@ interface ProductFormData {
   keywords?: string;
   synonyms?: string;
   categoryId?: string;
+  priority_image_index?: number;
 }
 
 interface ProductImage {
@@ -64,7 +66,8 @@ export function AlibabaImporter() {
     price: globalPrice,
     isPremium: false,
     variants: [],
-    selectedImages: []
+    selectedImages: [],
+    priority_image_index: 0,
   });
 
   const handleScrape = async () => {
@@ -107,10 +110,16 @@ export function AlibabaImporter() {
 
     setRewriting(type);
     try {
-      const { data, error } = await supabase.functions.invoke('scrape-alibaba', {
-        body: { 
-          action: 'rewrite', 
-          rewriteData: { content, type }
+      // We now call enhance-product for all AI-related rewrites.
+      // Note: The old 'rewrite' action in 'scrape-alibaba' was a simple text-in, text-out.
+      // The 'enhance-product' function is more powerful and rewrites everything at once.
+      // To keep the UI flow the same, we'll call the full enhancement and then just update the specific field that was requested.
+      // This is slightly inefficient but avoids a major UI refactor. A better long-term solution would be to have one "Enhance with AI" button.
+      const { data, error } = await supabase.functions.invoke('enhance-product', {
+        body: {
+          action: 'enhance',
+          title: scrapedProduct.title,
+          description: scrapedProduct.description
         }
       });
 
@@ -120,17 +129,19 @@ export function AlibabaImporter() {
       }
 
       if (data?.success) {
-        const rewrittenText = data.content?.trim();
-        if (rewrittenText) {
-          setRewrittenContent(prev => ({
-            ...prev,
-            [type]: rewrittenText
-          }));
-          toast.success(`${type} réécrit avec succès`);
-        } else {
-          console.error("Rewrite successful but content is empty.");
-          toast.error("La réécriture a échoué: Le contenu généré est vide.");
-        }
+        const { title, description, keywords, synonyms } = data.data;
+        
+        // Update all rewritten content in the state
+        const newRewrittenContent = {
+          title: title || rewrittenContent.title,
+          description: description || rewrittenContent.description,
+          keywords: Array.isArray(keywords) ? keywords.join(', ') : rewrittenContent.keywords,
+          synonyms: Array.isArray(synonyms) ? synonyms.join(', ') : rewrittenContent.synonyms,
+        };
+        setRewrittenContent(newRewrittenContent);
+
+        toast.success(`Contenu amélioré par l'IA !`);
+
       } else {
         throw new Error(data?.error || "Erreur lors de la réécriture");
       }
@@ -148,32 +159,20 @@ export function AlibabaImporter() {
 
     setCategorizing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('scrape-alibaba', {
+      const { data, error } = await supabase.functions.invoke('enhance-product', {
         body: {
           action: 'categorize',
-          productTitle: rewrittenContent.title || scrapedProduct.title,
-          productDescription: rewrittenContent.description || scrapedProduct.description,
+          title: rewrittenContent.title || scrapedProduct.title,
+          description: rewrittenContent.description || scrapedProduct.description,
         },
       });
 
       if (error) throw error;
 
-      if (data.success && data.category && data.subcategory) {
-        const { category: categoryName, subcategory: subcategoryName } = data;
-
-        // Find or create category
-        let { data: category, error: catError } = await supabase.from('categories').select('id, name').ilike('name', categoryName).single();
-        if (catError && catError.code !== 'PGRST116') throw catError;
-        if (!category) {
-          const { data: newCategory, error: newCatError } = await supabase.from('categories').insert({ name: categoryName }).select('id, name').single();
-          if (newCatError) throw newCatError;
-          category = newCategory;
-        }
-
-        // We just use the suggested category ID for the importer, subcategory is not handled here.
-        setSuggestedCategory(category);
-        toast.success(`Catégorie suggérée : ${category.name}`);
-
+      if (data.success && data.category) {
+        // The backend now returns the matched category object directly
+        setSuggestedCategory(data.category);
+        toast.success(`Catégorie suggérée : ${data.category.name}`);
       } else {
         throw new Error(data.error || "La suggestion de catégorie a échoué.");
       }
@@ -203,6 +202,7 @@ export function AlibabaImporter() {
       keywords: rewrittenContent.keywords || scrapedProduct.keywords || "",
       synonyms: rewrittenContent.synonyms || scrapedProduct.synonyms || "",
       categoryId: suggestedCategory?.id,
+      priority_image_index: 0,
     });
     setShowProductForm(true);
   };
@@ -237,6 +237,7 @@ export function AlibabaImporter() {
         slug: slug,
         similar_products_type: 'manual' as const,
         category_id: productFormData.categoryId,
+        priority_image_index: productFormData.priority_image_index,
       };
 
       const { error } = await supabase
@@ -256,7 +257,8 @@ export function AlibabaImporter() {
         price: globalPrice,
         isPremium: false,
         variants: [],
-        selectedImages: []
+        selectedImages: [],
+        priority_image_index: 0,
       });
       setUrl("");
       setShowProductForm(false);
@@ -654,6 +656,12 @@ export function AlibabaImporter() {
                     ))}
                   </div>
                 </div>
+
+                <ImagePrioritySelector
+                  images={productFormData.selectedImages}
+                  priorityImageIndex={productFormData.priority_image_index || 0}
+                  onPriorityChange={(index) => setProductFormData(prev => ({ ...prev, priority_image_index: index }))}
+                />
               </div>
             </div>
 

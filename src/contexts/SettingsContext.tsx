@@ -1,6 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+interface PaymentMethod {
+  id: string;
+  name: string;
+  enabled: boolean;
+}
+
 interface SettingsContextType {
   globalPrice: number;
   premiumSectionFrequency: number;
@@ -10,6 +16,8 @@ interface SettingsContextType {
   heroGridAlternatesPremiumProducts: boolean;
   geminiModel: string;
   productGridColumns: number;
+  mobileProductGridColumns: number;
+  paymentMethods: PaymentMethod[];
   loading: boolean;
   reloadSettings: () => Promise<void>;
 }
@@ -25,20 +33,23 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [heroGridAlternatesPremiumProducts, setHeroGridAlternatesPremiumProducts] = useState<boolean>(false);
   const [geminiModel, setGeminiModel] = useState<string>('gemini-1.5-flash-8b');
   const [productGridColumns, setProductGridColumns] = useState<number>(3);
+  const [mobileProductGridColumns, setMobileProductGridColumns] = useState<number>(1);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('settings').select('key,value');
+      const [settingsResult, paymentMethodsResult] = await Promise.all([
+        supabase.from('settings').select('key,value'),
+        supabase.from('payment_methods').select('*').eq('enabled', true)
+      ]);
 
-      if (error) {
-        throw error;
-      }
+      const { data: settingsData, error: settingsError } = settingsResult;
+      if (settingsError) throw settingsError;
 
-      if (data) {
-        const settingsMap = new Map(data.map(s => [s.key, s.value]));
-        
+      if (settingsData) {
+        const settingsMap = new Map(settingsData.map(s => [s.key, s.value]));
         setGlobalPrice(parseInt(settingsMap.get('global_product_price') || '3000', 10));
         setPremiumSectionFrequency(parseInt(settingsMap.get('premium_section_frequency') || '5', 10));
         setHeroStyle((settingsMap.get('hero_style') as 'carousel' | 'product_grid') || 'carousel');
@@ -47,6 +58,14 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         setHeroGridAlternatesPremiumProducts(settingsMap.get('hero_grid_alternates_premium_products') === 'true');
         setGeminiModel(settingsMap.get('gemini_model') || 'gemini-1.5-flash-8b');
         setProductGridColumns(parseInt(settingsMap.get('product_grid_columns') || '3', 10));
+        setMobileProductGridColumns(parseInt(settingsMap.get('mobile_product_grid_columns') || '1', 10));
+      }
+
+      const { data: paymentMethodsData, error: paymentMethodsError } = paymentMethodsResult;
+      if (paymentMethodsError) throw paymentMethodsError;
+
+      if (paymentMethodsData) {
+        setPaymentMethods(paymentMethodsData);
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -64,7 +83,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <SettingsContext.Provider value={{ globalPrice, premiumSectionFrequency, heroStyle, heroGridRows, heroGridCols, heroGridAlternatesPremiumProducts, geminiModel, productGridColumns, loading, reloadSettings }}>
+    <SettingsContext.Provider value={{ globalPrice, premiumSectionFrequency, heroStyle, heroGridRows, heroGridCols, heroGridAlternatesPremiumProducts, geminiModel, productGridColumns, mobileProductGridColumns, paymentMethods, loading, reloadSettings }}>
       {children}
     </SettingsContext.Provider>
   );

@@ -30,6 +30,7 @@ export function LygosPayModal({
   const [loading, setLoading] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('pending');
+  const [paymentId, setPaymentId] = useState<string | null>(null);
   const [checkingStatus, setCheckingStatus] = useState(false);
   const { toast } = useToast();
 
@@ -65,6 +66,7 @@ export function LygosPayModal({
       
       if (data.success) {
         setPaymentUrl(data.payment_url);
+        setPaymentId(data.payment_id);
         setPaymentStatus('processing');
         toast({
           title: "Lien de paiement créé",
@@ -87,12 +89,15 @@ export function LygosPayModal({
   };
 
   const checkPaymentStatus = async () => {
-    if (!orderId) return;
+    if (!orderId || !paymentId) return;
 
     setCheckingStatus(true);
     try {
       const response = await supabase.functions.invoke('check-lygos-payment', {
-        body: { order_id: orderId }
+        body: {
+          order_id: orderId,
+          payment_id: paymentId
+        }
       });
 
       if (response.error) {

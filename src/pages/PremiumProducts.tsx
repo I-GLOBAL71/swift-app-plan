@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import ProductCard from "@/components/ProductCard";
+import ProductGrid from "@/components/ProductGrid";
 import { Crown, Sparkles, Star, Filter, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 
 import { Tables } from "@/integrations/supabase/types";
+import { useSettings } from "@/contexts/SettingsContext";
 
 type Product = Tables<"products">;
 
 const PremiumProducts = () => {
+  const { mobileProductGridColumns } = useSettings();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -168,24 +170,7 @@ const PremiumProducts = () => {
               <div className="text-lg">Chargement de la collection premium...</div>
             </div>
           ) : filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {filteredProducts.map((product, index) => (
-                <div
-                  key={product.id}
-                  className="transform hover:scale-105 transition-transform duration-500 animate-fade-in"
-                  style={{ animationDelay: `${index * 0.05}s` }}
-                >
-                  <div className="relative">
-                    {/* Premium badge overlay */}
-                    <div className="absolute top-4 right-4 z-10 bg-gradient-premium text-premium-foreground px-3 py-2 rounded-full text-xs font-bold shadow-premium">
-                      <Crown className="w-3 h-3 inline mr-1" />
-                      PREMIUM
-                    </div>
-                    <ProductCard product={product} />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ProductGrid products={filteredProducts} mobileProductColumns={mobileProductGridColumns} />
           ) : (
             <div className="text-center py-16">
               <Crown className="w-16 h-16 text-premium mx-auto mb-4 opacity-50" />

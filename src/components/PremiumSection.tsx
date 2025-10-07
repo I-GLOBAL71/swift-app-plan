@@ -1,39 +1,16 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import ProductCard from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
 import { Crown, Sparkles, Star, ArrowRight } from "lucide-react";
-import { toast } from "sonner";
-
 import { Product } from "@/lib/types";
+import ProductGrid from "./ProductGrid";
 
-const PremiumSection = () => {
-  const [premiumProducts, setPremiumProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+interface PremiumSectionProps {
+  products: Product[];
+  loading: boolean;
+  mobileProductColumns?: number;
+}
 
-  useEffect(() => {
-    loadPremiumProducts();
-  }, []);
-
-  const loadPremiumProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("is_premium", true)
-        .eq("is_active", true)
-        .limit(6);
-
-      if (error) throw error;
-      setPremiumProducts(data as Product[] || []);
-    } catch (error) {
-      console.error("Error loading premium products:", error);
-      toast.error("Erreur lors du chargement des produits premium");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+const PremiumSection = ({ products: premiumProducts, loading, mobileProductColumns }: PremiumSectionProps) => {
   if (loading) {
     return (
       <div className="py-16">
@@ -72,6 +49,10 @@ const PremiumSection = () => {
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-8">
               Découvrez nos gadgets exceptionnels, une sélection de produits uniques dont les prix dépassent 3,000 FCFA. Profitez des prix les plus compétitifs du marché.
             </p>
+
+            <div className="mb-12">
+              <ProductGrid products={premiumProducts} mobileProductColumns={mobileProductColumns} />
+            </div>
 
             {/* Premium Benefits */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">

@@ -1,18 +1,47 @@
-import path from "path"
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
+import { VitePWA } from 'vite-plugin-pwa'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      devOptions: {
+        enabled: true
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg}']
+      },
+      includeAssets: ['favicon.ico', 'logo.png', 'logo2.png'],
+      manifest: {
+        name: 'oneprice.shop',
+        short_name: 'oneprice',
+        description: 'oneprice.shop e-commerce simplifiée avec prix unique de 3000 FCFA. Shopping accessible à tous avec produits de qualité et collection premium.',
+        theme_color: '#000000',
+        background_color: '#ffffff',
+        display: 'standalone',
+        start_url: '/',
+        icons: [
+          {
+            src: '/logo2.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: '/logo2.png',
+            sizes: '512x512',
+            type: 'image/png'
+          }
+        ]
+      }
+    })
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  server: {
-    headers: {
-      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' http://localhost:8080 ws://localhost:8080 https://pxipmsunesxtkepjwxvn.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://lovable.dev https://pxipmsunesxtkepjwxvn.supabase.co https://s.alicdn.com https://sc04.alicdn.com; media-src 'self' data:;"
-    }
-  }
 })

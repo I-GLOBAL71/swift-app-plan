@@ -4,6 +4,7 @@ import HeroSection from "@/components/HeroSection";
 import StandardSection from "@/components/StandardSection";
 import PremiumAccessButton from "@/components/PremiumAccessButton";
 import DynamicSections from "@/components/DynamicSections";
+import ViewAllProductsButton from "@/components/ViewAllProductsButton";
 import { useSettings } from "@/contexts/SettingsContext";
 import { Product } from "@/lib/types";
 
@@ -46,6 +47,7 @@ const Index = () => {
           </section>
           {showPremiumButton && <PremiumAccessButton />}
           <DynamicSections />
+          <ViewAllProductsButton />
         </div>
       </div>
     </main>

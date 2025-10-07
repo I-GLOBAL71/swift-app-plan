@@ -214,23 +214,27 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
         body: {
           title: formData.title,
           description: formData.description,
+          action: 'enhance', // Explicitly set action
         },
       });
 
       if (error) throw error;
 
-      setFormData({
-        ...formData,
-        title: data.data?.title || formData.title,
-        description: data.data?.description || formData.description,
-        keywords: Array.isArray(data.data?.keywords) ? data.data.keywords : formData.keywords,
-        synonyms: Array.isArray(data.data?.synonyms) ? data.data.synonyms : formData.synonyms,
-      });
-
-      toast.success("Contenu amélioré avec l'IA!");
+      if (data.success) {
+        setFormData({
+          ...formData,
+          title: data.data?.title || formData.title,
+          description: data.data?.description || formData.description,
+          keywords: Array.isArray(data.data?.keywords) ? data.data.keywords : formData.keywords,
+          synonyms: Array.isArray(data.data?.synonyms) ? data.data.synonyms : formData.synonyms,
+        });
+        toast.success("Contenu amélioré avec l'IA!");
+      } else {
+        throw new Error(data.error || "L'amélioration du contenu a échoué.");
+      }
     } catch (error) {
       console.error("Erreur lors de l'amélioration avec l'IA:", error);
-      toast.error("Erreur lors de l'amélioration avec l'IA");
+      toast.error(`Erreur: ${error.message}`);
     } finally {
       setEnhancing(false);
     }
@@ -243,41 +247,40 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
     }
     setCategorizing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("scrape-alibaba", {
+      const { data, error } = await supabase.functions.invoke("enhance-product", {
         body: {
+          title: formData.title,
+          description: formData.description,
           action: 'categorize',
-          productTitle: formData.title,
-          productDescription: formData.description,
         },
       });
 
       if (error) throw error;
 
-      if (data.success && data.category && data.subcategory) {
-        const { category: categoryName, subcategory: subcategoryName } = data;
+      if (data.success && data.category) {
+        const { category, subcategory } = data;
 
-        // Find or create category
-        let { data: category, error: catError } = await supabase.from('categories').select('id, name').ilike('name', categoryName).single();
-        if (catError && catError.code !== 'PGRST116') throw catError; // PGRST116: no rows found
-        if (!category) {
-          const { data: newCategory, error: newCatError } = await supabase.from('categories').insert({ name: categoryName }).select('id, name').single();
-          if (newCatError) throw newCatError;
-          category = newCategory;
-          setCategories(prev => [...prev, category!]);
-        }
-
-        // Find or create sub-category
-        let { data: subcategory, error: subCatError } = await supabase.from('sub_categories').select('id, name, category_id').ilike('name', subcategoryName).eq('category_id', category.id).single();
-        if (subCatError && subCatError.code !== 'PGRST116') throw subCatError;
-        if (!subcategory) {
-          const { data: newSubcategory, error: newSubCatError } = await supabase.from('sub_categories').insert({ name: subcategoryName, category_id: category.id }).select('id, name, category_id').single();
-          if (newSubCatError) throw newSubCatError;
-          subcategory = newSubcategory;
-          setSubCategories(prev => [...prev, subcategory!]);
+        // The backend guarantees the category exists. We should check if it's new to us.
+        if (!categories.some(c => c.id === category.id)) {
+          setCategories(prev => [...prev, category]);
         }
         
-        setFormData(prev => ({ ...prev, category_id: category!.id, sub_category_id: subcategory!.id }));
-        toast.success(`Catégorie suggérée : ${category.name} > ${subcategory.name}`);
+        // Same for subcategory
+        if (subcategory && !subCategories.some(sc => sc.id === subcategory.id)) {
+          // The backend sends the full subcategory object including category_id
+          setSubCategories(prev => [...prev, subcategory]);
+        }
+
+        setFormData(prev => ({
+          ...prev,
+          category_id: category.id,
+          sub_category_id: subcategory ? subcategory.id : null
+        }));
+
+        const toastMessage = subcategory
+          ? `Catégorie suggérée : ${category.name} > ${subcategory.name}`
+          : `Catégorie suggérée : ${category.name}`;
+        toast.success(toastMessage);
 
       } else {
         throw new Error(data.error || "La suggestion de catégorie a échoué.");

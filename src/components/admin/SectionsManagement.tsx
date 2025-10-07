@@ -25,6 +25,7 @@ interface Section {
   show_premium_only: boolean;
   show_standard_only: boolean;
   selection_mode: 'automatic' | 'manual' | 'mixed';
+  mobile_product_columns: number;
 }
 
 const SectionsManagement = () => {
@@ -44,6 +45,7 @@ const SectionsManagement = () => {
     show_premium_only: false,
     show_standard_only: false,
     selection_mode: "automatic" as 'automatic' | 'manual' | 'mixed',
+    mobile_product_columns: 1,
   });
 
   const [showProductSelector, setShowProductSelector] = useState(false);
@@ -115,6 +117,7 @@ const SectionsManagement = () => {
       show_premium_only: section.show_premium_only,
       show_standard_only: section.show_standard_only,
       selection_mode: section.selection_mode || 'automatic',
+      mobile_product_columns: section.mobile_product_columns || 1,
     });
     setShowForm(true);
   };
@@ -150,6 +153,7 @@ const SectionsManagement = () => {
       show_premium_only: false,
       show_standard_only: false,
       selection_mode: "automatic",
+      mobile_product_columns: 1,
     });
     setEditingSection(null);
     setShowForm(false);
@@ -194,7 +198,7 @@ const SectionsManagement = () => {
                   id="position"
                   type="number"
                   value={formData.position}
-                  onChange={(e) => setFormData({ ...formData, position: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, position: parseInt(e.target.value) || 0 })}
                 />
               </div>
             </div>
@@ -210,6 +214,17 @@ const SectionsManagement = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="mobile_product_columns">Colonnes sur mobile</Label>
+                <Input
+                  id="mobile_product_columns"
+                  type="number"
+                  min="1"
+                  max="3"
+                  value={formData.mobile_product_columns}
+                  onChange={(e) => setFormData({ ...formData, mobile_product_columns: parseInt(e.target.value) || 1 })}
+                />
+              </div>
               <div>
                 <Label htmlFor="style_type">Style</Label>
                 <Select
@@ -236,7 +251,7 @@ const SectionsManagement = () => {
                   min="1"
                   max="20"
                   value={formData.max_products}
-                  onChange={(e) => setFormData({ ...formData, max_products: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, max_products: parseInt(e.target.value) || 1 })}
                 />
               </div>
 

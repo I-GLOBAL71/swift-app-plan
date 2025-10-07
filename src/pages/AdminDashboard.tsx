@@ -13,13 +13,14 @@ import HeroSlidesManagement from "@/components/admin/HeroSlidesManagement";
 import PagesManagement from "@/components/admin/PagesManagement";
 import { CategoriesManagement } from "@/components/admin/CategoriesManagement";
 import PushNotifications from "@/components/admin/PushNotifications";
-import { LogOut, Package, ShoppingCart, BarChart3, Settings, Layout, MapPin, Presentation, Menu, FileText, FolderTree, Bell } from "lucide-react";
+import PaymentMethodSettings from "@/components/admin/PaymentMethodSettings";
+import { LogOut, Package, ShoppingCart, BarChart3, Settings, Layout, MapPin, Presentation, Menu, FileText, FolderTree, Bell, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
-type TabValue = "dashboard" | "hero" | "sections" | "products" | "categories" | "orders" | "cities" | "pages" | "notifications" | "settings";
+type TabValue = "dashboard" | "hero" | "sections" | "products" | "categories" | "orders" | "cities" | "pages" | "notifications" | "settings" | "payment";
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
@@ -121,6 +122,7 @@ export default function AdminDashboard() {
                   {renderTabButton("cities", "Villes", <MapPin className="h-4 w-4" />)}
                   {renderTabButton("pages", "Pages", <FileText className="h-4 w-4" />)}
                   {renderTabButton("notifications", "Notifications", <Bell className="h-4 w-4" />)}
+                  {renderTabButton("payment", "Paiements", <CreditCard className="h-4 w-4" />)}
                   {renderTabButton("settings", "Paramètres", <Settings className="h-4 w-4" />)}
                 </div>
               </SheetContent>
@@ -168,6 +170,10 @@ export default function AdminDashboard() {
                   <Settings className="h-4 w-4" />
                   Paramètres
                 </TabsTrigger>
+                <TabsTrigger value="payment" className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Paiements
+                </TabsTrigger>
               </TabsList>
               <ScrollBar orientation="horizontal" />
             </ScrollArea>
@@ -211,6 +217,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="notifications">
             <PushNotifications />
+          </TabsContent>
+
+          <TabsContent value="payment">
+            <PaymentMethodSettings />
           </TabsContent>
         </Tabs>
       </main>

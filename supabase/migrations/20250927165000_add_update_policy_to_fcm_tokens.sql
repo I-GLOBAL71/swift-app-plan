@@ -1,0 +1,1 @@
+CREATE POLICY "Allow individual update" ON fcm_tokens FOR UPDATE USING (true) WITH CHECK (true);

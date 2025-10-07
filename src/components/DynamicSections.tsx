@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import ProductCard from "@/components/ProductCard";
+import ProductGrid from "@/components/ProductGrid";
 import { Button } from "@/components/ui/button";
 import { Crown, Package, Sparkles, Star } from "lucide-react";
 import { toast } from "sonner";
@@ -21,64 +22,73 @@ interface Section {
   show_premium_only: boolean;
   show_standard_only: boolean;
   selection_mode: 'automatic' | 'manual' | 'mixed';
+  mobile_product_columns: number;
 }
 
 
 const DynamicSections = () => {
   const [sections, setSections] = useState<Section[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [productsBySection, setProductsBySection] = useState<Record<string, Product[]>>({});
   const [loading, setLoading] = useState(true);
   const { productGridColumns, premiumSectionFrequency } = useSettings();
 
   useEffect(() => {
-    loadData();
+    const fetchAndProcessData = async () => {
+      setLoading(true);
+      try {
+        const [sectionsResult, productsResult] = await Promise.all([
+          supabase.from("sections").select("*").eq("is_active", true).order("position", { ascending: true }),
+          supabase.from("products").select("*").eq("is_active", true)
+        ]);
+
+        if (sectionsResult.error) throw sectionsResult.error;
+        if (productsResult.error) throw productsResult.error;
+
+        const sectionsData: Section[] = (sectionsResult.data || []).map((section: any) => ({
+          ...section,
+          selection_mode: section.selection_mode || 'automatic'
+        }));
+        
+        const allProducts: Product[] = productsResult.data || [];
+        const newProductsBySection: Record<string, Product[]> = {};
+        let usedProductIds = new Set<string>();
+
+        for (const section of sectionsData) {
+          let sectionProducts: Product[] = [];
+          
+          if (section.selection_mode === 'manual') {
+            // Manual selection logic to be implemented
+          } else { // 'automatic' or 'mixed'
+            let availableProducts = allProducts.filter(p => !usedProductIds.has(p.id));
+
+            if (section.show_premium_only) {
+              sectionProducts = availableProducts.filter(p => p.is_premium);
+            } else if (section.show_standard_only) {
+              sectionProducts = availableProducts.filter(p => !p.is_premium);
+            } else {
+              sectionProducts = availableProducts;
+            }
+            
+            sectionProducts = sectionProducts.slice(0, section.max_products);
+          }
+
+          newProductsBySection[section.id] = sectionProducts;
+          sectionProducts.forEach(p => usedProductIds.add(p.id));
+        }
+
+        setSections(sectionsData);
+        setProductsBySection(newProductsBySection);
+
+      } catch (error) {
+        console.error("Error loading data:", error);
+        toast.error("Erreur lors du chargement des sections");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAndProcessData();
   }, []);
-
-  const loadData = async () => {
-    try {
-      const [sectionsResult, productsResult] = await Promise.all([
-        supabase
-          .from("sections")
-          .select("*")
-          .eq("is_active", true)
-          .order("position", { ascending: true }),
-        supabase
-          .from("products")
-          .select("*")
-          .eq("is_active", true)
-      ]);
-
-      if (sectionsResult.error) throw sectionsResult.error;
-      if (productsResult.error) throw productsResult.error;
-
-      const sectionsData = (sectionsResult.data || []).map((section: any) => ({
-        ...section,
-        selection_mode: section.selection_mode || 'automatic'
-      }));
-
-      setSections(sectionsData);
-      setProducts(productsResult.data as Product[] || []);
-    } catch (error) {
-      console.error("Error loading data:", error);
-      toast.error("Erreur lors du chargement des sections");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getFilteredProducts = (section: Section) => {
-    let filtered = products;
-
-    if (section.show_premium_only) {
-      filtered = filtered.filter(p => p.is_premium);
-    } else if (section.show_standard_only) {
-      filtered = filtered.filter(p => !p.is_premium);
-    } else if (section.selection_mode === 'automatic') {
-      filtered = filtered.filter(p => !p.is_premium);
-    }
-
-    return filtered.slice(0, section.max_products);
-  };
 
   const getSectionIcon = (styleType: string) => {
     switch (styleType) {
@@ -106,28 +116,35 @@ const DynamicSections = () => {
     }
   };
 
-  const getGridColsClass = (cols: number) => {
-    switch (cols) {
-      case 1:
-        return 'grid-cols-1';
-      case 2:
-        return 'grid-cols-2';
-      case 3:
-        return 'grid-cols-2 md:grid-cols-3';
-      case 4:
-        return 'grid-cols-2 lg:grid-cols-4';
-      case 5:
-        return 'grid-cols-2 lg:grid-cols-5';
-      default:
-        return 'grid-cols-2 md:grid-cols-3';
+  const getGridColsClass = (cols: number, mobileCols?: number) => {
+    const getMobileColsClass = (cols: number) => {
+        switch (cols) {
+            case 1: return 'grid-cols-1';
+            case 2: return 'grid-cols-2';
+            case 3: return 'grid-cols-3';
+            default: return 'grid-cols-1';
+        }
     }
+
+    const desktopCols = (() => {
+        switch (cols) {
+            case 1: return 'sm:grid-cols-1';
+            case 2: return 'sm:grid-cols-2';
+            case 3: return 'md:grid-cols-3';
+            case 4: return 'lg:grid-cols-4';
+            case 5: return 'lg:grid-cols-5';
+            default: return 'md:grid-cols-3';
+        }
+    })();
+
+    return `${getMobileColsClass(mobileCols ?? 1)} ${desktopCols}`;
   };
 
   const renderSection = (section: Section) => {
-    const filteredProducts = getFilteredProducts(section);
+    const filteredProducts = productsBySection[section.id] || [];
     const Icon = getSectionIcon(section.style_type);
     const backgroundClass = getSectionBackgroundClass(section.background_color);
-    const gridColsClass = getGridColsClass(productGridColumns);
+    const gridColsClass = getGridColsClass(productGridColumns, section.mobile_product_columns);
     
     if (filteredProducts.length === 0) return null;
 
@@ -150,46 +167,22 @@ const DynamicSections = () => {
           )}
         </div>
 
-        {section.style_type === "carousel" ? (
-          <div className="overflow-x-auto pb-4">
-            <div className="flex gap-6 min-w-max">
-              {filteredProducts.map((product) => (
-                <div key={product.id} className="w-80 flex-shrink-0">
-                  <ProductCard product={product} />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : section.style_type === "featured" ? (
-          <div className={`grid ${gridColsClass} gap-8 items-stretch`}>
-            {filteredProducts.map((product) => (
-              <div key={product.id} className="transform hover:scale-105 transition-transform duration-300 h-full">
-                <ProductCard product={product} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className={`grid ${gridColsClass} gap-6 items-stretch`}>
-            {filteredProducts.map((product) => (
-              <div key={product.id} className="h-full">
-                <ProductCard product={product} />
-              </div>
-            ))}
-          </div>
-        )}
+        <ProductGrid products={filteredProducts} mobileProductColumns={section.mobile_product_columns} />
 
         <div className="text-center mt-12">
-          <Button 
+          <Button
+            asChild
             variant={section.style_type === "premium" ? "premium" : "outline"}
             size="lg"
             className="w-full sm:w-auto"
           >
-            {section.show_premium_only 
-              ? "Explorer la collection Premium"
-              : section.show_standard_only 
-              ? "Voir tous les produits standards"
-              : "Voir plus de produits"
-            }
+            <Link to={section.show_premium_only ? "/premium-products" : "/products"}>
+              {section.show_premium_only
+                ? "Explorer la collection Premium"
+                : section.show_standard_only
+                ? "Voir tous les produits standards"
+                : "Voir plus de produits"}
+            </Link>
           </Button>
         </div>
       </div>
@@ -220,8 +213,8 @@ const DynamicSections = () => {
     );
   }
 
-  // Check if we should show premium button based on frequency
-  const standardProducts = products.filter(p => !p.is_premium);
+  const allProducts = Object.values(productsBySection).flat();
+  const standardProducts = allProducts.filter(p => !p.is_premium);
   const shouldShowPremiumButton = standardProducts.length >= premiumSectionFrequency;
 
   return (
@@ -229,12 +222,12 @@ const DynamicSections = () => {
       {sections.map((section, index) => {
         const rendered = renderSection(section);
         if (!rendered) return null;
-        
-        // Insert premium button after every N sections based on frequency
-        const showPremiumAfterSection = shouldShowPremiumButton && 
-          (index + 1) % Math.max(1, Math.floor(sections.length / 3)) === 0 && 
+
+        const showPremiumAfterSection = shouldShowPremiumButton &&
+          premiumSectionFrequency > 0 &&
+          (index + 1) % premiumSectionFrequency === 0 &&
           index < sections.length - 1;
-        
+
         return (
           <div key={section.id}>
             {rendered}

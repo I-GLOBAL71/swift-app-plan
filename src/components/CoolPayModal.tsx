@@ -25,7 +25,6 @@ export function CoolPayModal({ isOpen, onClose, amount, shippingFee, onSuccess, 
   const { toast } = useToast();
 
   const totalAmount = amount + shippingFee;
-  const pollingRef = useRef<number | null>(null);
 
   useEffect(() => {
     const fetchOrderData = async () => {
@@ -63,52 +62,10 @@ export function CoolPayModal({ isOpen, onClose, amount, shippingFee, onSuccess, 
     };
 
     fetchOrderData();
-
-    // Cleanup polling on unmount or close
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    };
   }, [isOpen, orderId]);
 
   const formatPrice = (price: number) => {
     return price.toLocaleString('fr-FR') + ' FCFA';
-  };
-
-  const pollPaymentStatus = (transactionRef: string) => {
-    pollingRef.current = window.setInterval(async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('check-payment-status', {
-          body: { transaction_ref: transactionRef },
-        });
-
-        if (error) {
-          // Don't stop polling on network errors
-          console.error('Polling error:', error);
-          return;
-        }
-        
-        const status = data?.status || data?.data?.status;
-
-        if (status === 'SUCCESS' || status === 'COMPLETED') {
-          if (pollingRef.current) clearInterval(pollingRef.current);
-          onSuccess(transactionRef);
-        } else if (status === 'FAILED' || status === 'CANCELLED') {
-          if (pollingRef.current) clearInterval(pollingRef.current);
-          setLoading(false);
-          toast({
-            title: "Paiement échoué",
-            description: "Le paiement a échoué ou a été annulé.",
-            variant: "destructive",
-          });
-        }
-        // else PENDING, continue polling
-      } catch (err) {
-        console.error('Error in polling interval:', err);
-      }
-    }, 5000); // Poll every 5 seconds
   };
 
   const handlePayment = async () => {
@@ -122,19 +79,26 @@ export function CoolPayModal({ isOpen, onClose, amount, shippingFee, onSuccess, 
     }
 
     setLoading(true);
-    setPaymentLoadingMessage('Création de la transaction...');
+    setPaymentLoadingMessage('Initiation du paiement...');
 
     try {
-      const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-payment', {
+      const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-mycoolpay-payment', {
         body: {
           amount: totalAmount,
           currency: 'XAF',
-          reference: orderId,
-          reason: `Commande ${orderId}`,
-          customer: {
+          description: `Commande ${orderId}`,
+          sender: {
             name: customer.name,
-            phone: phoneNumber,
-            email: customer.email,
+            email: customer.email || 'noreply@example.com',
+          },
+          recipient: {
+            name: customer.name,
+            account_number: phoneNumber,
+            bank_code: "CM_MOBILE_MONEY", // Example, should be dynamic if needed
+            bank_name: "Mobile Money"
+          },
+          metadata: {
+            order_id: orderId,
           },
           orderId: orderId,
         },
@@ -142,26 +106,27 @@ export function CoolPayModal({ isOpen, onClose, amount, shippingFee, onSuccess, 
 
       if (paymentError) throw paymentError;
 
-      const paymentUrl = paymentData?.payment_url || paymentData?.data?.payment_url;
-      const transactionRef = paymentData?.transaction_ref || paymentData?.data?.transaction_ref;
-
-      if (!paymentUrl || !transactionRef) {
+      const transactionId = paymentData?.data?.transfer_id;
+      if (!transactionId) {
         throw new Error("Réponse invalide de l'API de paiement.");
       }
 
-      setPaymentLoadingMessage('En attente de la confirmation du paiement...');
-      const popup = window.open(paymentUrl, 'myCoolPay', 'resizable,scrollbars');
+      setPaymentLoadingMessage('Paiement initié. En attente de la confirmation du webhook...');
       
-      if (!popup) {
-        throw new Error("Le popup de paiement a été bloqué. Veuillez autoriser les popups pour ce site.");
-      }
+      // No popup, no polling. We just wait for the webhook to call onSuccess.
+      // The parent component will listen for database changes.
+      toast({
+        title: "Paiement initié",
+        description: "Veuillez confirmer le paiement sur votre téléphone. Vous serez notifié une fois le paiement confirmé.",
+      });
 
-      pollPaymentStatus(transactionRef);
+      // We can call onSuccess immediately to update the UI to a "pending" state
+      // The parent component should handle the final confirmation via webhook.
+      onSuccess(transactionId);
 
     } catch (error: any) {
       const errorMessage = error.context?.error?.message || error.message || "Une erreur s'est produite lors de l'initiation du paiement.";
       console.error('Payment error:', error);
-      console.error('Detailed error message:', errorMessage);
       toast({
         title: "Erreur de paiement",
         description: errorMessage,

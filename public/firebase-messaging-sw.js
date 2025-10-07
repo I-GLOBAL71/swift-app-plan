@@ -29,3 +29,14 @@ messaging.onBackgroundMessage((payload) => {
 
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
+
+// PWA lifecycle events
+self.addEventListener('install', (event) => {
+  console.log('Service worker installed');
+});
+
+self.addEventListener('fetch', (event) => {
+  // This is a basic fetch handler. A more robust implementation
+  // would include caching strategies.
+  event.respondWith(fetch(event.request));
+});

@@ -11,17 +11,6 @@
         "source": "**",
         "destination": "/index.html"
       }
-    ],
-    "headers": [
-      {
-        "source": "**",
-        "headers": [
-          {
-            "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' ws: wss://pxipmsunesxtkepjwxvn.supabase.co https://pxipmsunesxtkepjwxvn.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://lovable.dev https://pxipmsunesxtkepjwxvn.supabase.co https://s.alicdn.com https://sc04.alicdn.com; media-src 'self' data:;"
-          }
-        ]
-      }
     ]
   }
 }
