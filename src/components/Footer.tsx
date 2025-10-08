@@ -47,7 +47,7 @@ type FooterData = {
 
 const Footer = () => {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
-  const { data: footerData, isLoading } = useQuery({
+  const { data: footerData, isLoading } = useQuery<FooterData, Error>({
     queryKey: ['footerData'],
     queryFn: async (): Promise<FooterData> => {
       const pagesQuery = supabase

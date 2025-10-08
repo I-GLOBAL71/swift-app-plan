@@ -28,7 +28,7 @@ interface Section {
 
 const DynamicSections = () => {
   const [sections, setSections] = useState<Section[]>([]);
-  const [productsBySection, setProductsBySection] = useState<Record<string, Product[]>>({});
+  const [productsBySection, setProductsBySection] = useState<Record<string, Product[]>>({} as Record<string, Product[]>);
   const [loading, setLoading] = useState(true);
   const { productGridColumns, premiumSectionFrequency } = useSettings();
 
@@ -37,9 +37,9 @@ const DynamicSections = () => {
       setLoading(true);
       try {
         const [sectionsResult, productsResult] = await Promise.all([
-          supabase.from("sections").select("*").eq("is_active", true).order("position", { ascending: true }),
-          supabase.from("products").select("*").eq("is_active", true)
-        ]);
+          supabase.from("sections").select("*").eq("is_active", true).order("position", { ascending: true }) as any,
+          supabase.from("products").select("*").eq("is_active", true) as any
+        ]) as any;
 
         if (sectionsResult.error) throw sectionsResult.error;
         if (productsResult.error) throw productsResult.error;

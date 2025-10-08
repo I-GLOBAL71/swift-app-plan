@@ -180,11 +180,11 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
         if (formData.similar_products_type === 'manual' && manualSimilarProducts.length > 0) {
           const relations = manualSimilarProducts.map(p => ({
             product_id: savedProduct.id,
-            similar_product_id: p.id,
+            related_product_id: p.id,
           }));
           const { error: insertError } = await supabase
             .from('product_relations')
-            .insert(relations);
+            .insert(relations as any);
 
           if (insertError) {
             console.error("Error saving new relations:", insertError);

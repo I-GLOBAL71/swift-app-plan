@@ -18,21 +18,9 @@ interface Order {
   payment_method: string;
   expected_delivery_date: string;
   created_at: string;
-  updated_at: string;
-  city: {
-    name: string;
-    region: string;
-    delivery_days: number;
-  };
-  order_items: {
-    id: string;
-    quantity: number;
-    price: number;
-    product: {
-      title: string;
-      image_url: any;
-    };
-  }[];
+  updated_at?: string;
+  city?: any;
+  order_items?: any[];
 }
 
 export default function OrderTracking() {
@@ -58,20 +46,13 @@ export default function OrderTracking() {
       const { data, error } = await supabase
         .from('orders')
         .select(`
-          *,
-          city:cameroon_cities(name, region, delivery_days),
-          order_items(
-            id,
-            quantity,
-            price,
-            product:products(title, image_url)
-          )
+          *
         `)
         .eq('id', id)
         .single();
 
       if (error) throw error;
-      setOrder(data);
+      setOrder(data as unknown as Order);
     } catch (error) {
       console.error('Error loading order:', error);
       toast({

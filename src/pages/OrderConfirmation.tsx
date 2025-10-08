@@ -11,29 +11,15 @@ interface Order {
   id: string;
   customer_name: string;
   customer_phone: string;
-  customer_email: string;
+  customer_email?: string;
   total_amount: number;
   status: string;
   payment_method: string;
   expected_delivery_date: string;
   created_at: string;
-  notes: string;
-  city: {
-    name: string;
-    region: string;
-    delivery_days: number;
-  };
-    order_items: {
-      id: string;
-      quantity: number;
-      price: number;
-      product: {
-        id: string;
-        title: string;
-        image_url: any;
-        is_premium: boolean;
-      };
-    }[];
+  notes?: string;
+  city?: any;
+  order_items?: any[];
 }
 
 export default function OrderConfirmation() {
@@ -58,20 +44,13 @@ export default function OrderConfirmation() {
       const { data, error } = await supabase
         .from('orders')
         .select(`
-          *,
-          city:cameroon_cities(name, region, delivery_days),
-          order_items(
-            id,
-            quantity,
-            price,
-            product:products(id, title, image_url, is_premium)
-          )
+          *
         `)
         .eq('id', orderId)
         .single();
 
       if (error) throw error;
-      setOrder(data);
+      setOrder(data as unknown as Order);
     } catch (error) {
       console.error('Error loading order:', error);
       toast({

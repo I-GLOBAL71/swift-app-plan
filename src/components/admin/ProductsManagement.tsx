@@ -82,7 +82,7 @@ export function ProductsManagement() {
           .update({
             category_id: category.id,
             sub_category_id: subcategory ? subcategory.id : null,
-          })
+          } as any)
           .eq('id', product.id);
 
         if (updateError) throw updateError;

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { toImagesArray } from "@/lib/utils";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Tables } from "@/integrations/supabase/types";
+import { Product } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,8 +12,6 @@ import { toast } from "sonner";
 import { useCart } from "@/contexts/CartContext";
 import ProductCard from "@/components/ProductCard";
 import BackToProductsBanner from "@/components/BackToProductsBanner";
-
-type Product = Tables<'products'>;
 
 export function ProductDetail() {
   const { id } = useParams();
@@ -35,7 +33,7 @@ export function ProductDetail() {
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("*, slug")
+        .select("*")
         .eq("id", id)
         .eq("is_active", true)
         .single();
@@ -61,12 +59,12 @@ export function ProductDetail() {
       if (currentProduct.similar_products_type === 'manual') {
         const { data: relations, error: relationsError } = await supabase
           .from('product_relations')
-          .select('similar_product_id')
+          .select('related_product_id')
           .eq('product_id', currentProduct.id);
 
         if (relationsError) throw relationsError;
 
-        const similarIds = relations.map(r => r.similar_product_id);
+        const similarIds = relations.map(r => r.related_product_id);
         if (similarIds.length > 0) {
           const { data: products, error: productsError } = await supabase
             .from('products')
