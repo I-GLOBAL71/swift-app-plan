@@ -62,7 +62,7 @@ serve(async (req: Request) => {
       throw new Error(`Failed to update order: ${updateError.message}`);
     }
 
-    console.log(`Order ${orderId} updated to status: ${paymentStatus}`);
+    console.log(`Order ${orderId} updated to status: ${paymentStatusUpdate}`);
 
     // 4. Respond with 200 OK
     return new Response("Webhook received", { status: 200 });

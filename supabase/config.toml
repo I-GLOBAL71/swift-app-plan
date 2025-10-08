@@ -33,13 +33,27 @@ verify_jwt = false
 [storage]
 enabled = true
 file_size_limit = "50MiB"
+
 [functions.send-push-notification]
 enabled = true
 verify_jwt = true
 import_map = "./functions/send-push-notification/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
 entrypoint = "./functions/send-push-notification/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/send-push-notification/*.html" ]
+
+[functions.payment-callback]
+verify_jwt = false
+
+[functions.mycoolpay-callback]
+verify_jwt = false
+
+[functions.check-lygos-payment]
+verify_jwt = false
+
+[functions.create-lygos-payment]
+verify_jwt = false
+
+[functions.create-mycoolpay-payment]
+verify_jwt = false
+
+[functions.generate-payment-link]
+verify_jwt = false

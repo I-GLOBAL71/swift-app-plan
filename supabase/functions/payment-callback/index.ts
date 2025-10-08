@@ -2,9 +2,13 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 
-// Helper function to convert ArrayBuffer to hex string
-function bufferToHex(buffer: ArrayBuffer): string {
-  return Array.from(new Uint8Array(buffer))
+// Helper function to calculate MD5 hash (using a simple implementation)
+async function md5(text: string): Promise<string> {
+  // Import crypto library for MD5
+  const crypto = await import("https://deno.land/std@0.160.0/crypto/mod.ts");
+  const data = new TextEncoder().encode(text);
+  const hashBuffer = await crypto.crypto.subtle.digest("MD5", data);
+  return Array.from(new Uint8Array(hashBuffer))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 }
@@ -24,12 +28,7 @@ serve(async (req) => {
     }
 
     const toSign = `${privateKey}|${payload.transaction_ref}|${payload.status}`;
-    
-    // Use Web Crypto API for MD5 hash
-    const encoder = new TextEncoder();
-    const data = encoder.encode(toSign);
-    const hashBuffer = await crypto.subtle.digest("MD5", data);
-    const digest = bufferToHex(hashBuffer);
+    const digest = await md5(toSign);
 
     if (digest !== signature) {
       console.warn("Invalid signature", { digest, signature });
@@ -45,12 +44,17 @@ serve(async (req) => {
       // The 'reference' from CoolPay is our 'orderId'
       const { error } = await supabaseClient
         .from("orders")
-        .update({ status: "confirmed" })
+        .update({ 
+          status: "confirmed",
+          payment_status: "paid"
+        })
         .eq("id", payload.reference);
 
       if (error) {
         console.error("Error updating order status:", error);
         // Still return OK to My-CoolPay, but log the error for debugging
+      } else {
+        console.log(`Order ${payload.reference} payment confirmed via callback`);
       }
     }
 
