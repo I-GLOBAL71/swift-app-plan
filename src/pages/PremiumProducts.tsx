@@ -7,10 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
-import { Tables } from "@/integrations/supabase/types";
 import { useSettings } from "@/contexts/SettingsContext";
-
-type Product = Tables<"products">;
+import { Product } from "@/lib/types";
 
 const PremiumProducts = () => {
   const { mobileProductGridColumns } = useSettings();
@@ -49,7 +47,6 @@ const PremiumProducts = () => {
   const filterAndSortProducts = () => {
     let filtered = products.filter(product =>
       product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.keywords?.some(keyword => keyword.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 

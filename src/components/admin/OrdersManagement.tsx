@@ -103,7 +103,22 @@ export function OrdersManagement() {
       if (error) throw error;
       
       console.log("Orders successfully loaded from database:", data);
-      const loadedOrders = data as Order[] || [];
+      const loadedOrders = (data || []).map((order: any) => ({
+        id: order.id,
+        customer_name: order.customer_name,
+        customer_phone: order.customer_phone,
+        customer_email: order.customer_email,
+        total_amount: order.total_amount,
+        status: order.status,
+        notes: order.notes,
+        payment_method: order.payment_method,
+        expected_delivery_date: order.expected_delivery_date,
+        created_at: order.created_at,
+        city_id: order.city_id,
+        payment_status: order.status === 'confirmed' || order.status === 'delivered' ? 'paid' : 'pending',
+        cameroon_cities: order.cameroon_cities,
+        order_items: order.order_items
+      })) as Order[];
       setAllOrders(loadedOrders);
     } catch (error) {
       console.error('Error loading orders:', error);

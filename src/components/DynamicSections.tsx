@@ -36,10 +36,8 @@ const DynamicSections = () => {
     const fetchAndProcessData = async () => {
       setLoading(true);
       try {
-        const [sectionsResult, productsResult] = await Promise.all([
-          supabase.from("sections").select("*").eq("is_active", true).order("position", { ascending: true }) as any,
-          supabase.from("products").select("*").eq("is_active", true) as any
-        ]) as any;
+        const sectionsResult: any = await supabase.from("sections").select("*").eq("is_active", true).order("position", { ascending: true });
+        const productsResult: any = await supabase.from("products").select("*").eq("is_active", true);
 
         if (sectionsResult.error) throw sectionsResult.error;
         if (productsResult.error) throw productsResult.error;

@@ -50,12 +50,12 @@ const Footer = () => {
   const { data: footerData, isLoading } = useQuery<FooterData, Error>({
     queryKey: ['footerData'],
     queryFn: async (): Promise<FooterData> => {
-      const pagesQuery = supabase
+      const pagesQuery: any = supabase
         .from('pages')
         .select('slug, title')
         .eq('show_in_footer', true);
 
-      const supportQuery = supabase
+      const supportQuery: any = supabase
         .from('pages')
         .select('content')
         .eq('slug', 'support')

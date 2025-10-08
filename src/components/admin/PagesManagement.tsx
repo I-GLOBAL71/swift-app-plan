@@ -115,7 +115,7 @@ const PagesManagement = () => {
     mutationFn: async ({ slug, title, content, show_in_footer }: { slug: PageSlug, title: string, content: PageContent, show_in_footer: boolean }) => {
       const { error } = await supabase
         .from("pages")
-        .upsert([{ slug, title, content, show_in_footer }]);
+        .upsert({ slug, title, content: content as any, show_in_footer });
       if (error) throw new Error(error.message);
     },
     onSuccess: (_, variables) => {

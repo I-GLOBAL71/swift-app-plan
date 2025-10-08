@@ -12,7 +12,7 @@ interface ShareButtonProps {
   product: {
     id: string;
     title: string;
-    slug: string;
+    slug?: string;
   };
   size?: "default" | "sm" | "lg" | "icon";
 }
@@ -20,7 +20,7 @@ interface ShareButtonProps {
 const ShareButton = ({ product, size = "icon" }: ShareButtonProps) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const productUrl = `${window.location.origin}/product/${product.slug}/${product.id}`;
+  const productUrl = `${window.location.origin}/product/${product.id}`;
 
   const handleNativeShare = async (e: React.MouseEvent) => {
     e.stopPropagation();

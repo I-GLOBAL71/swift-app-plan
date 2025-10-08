@@ -2,14 +2,12 @@
 export interface Product {
   id: string;
   title: string;
-  description?: string;
   price: number;
   image_url: string | string[];
   is_premium: boolean;
   keywords?: string[];
   synonyms?: string[];
   is_active?: boolean;
-  slug?: string;
   similar_products_type?: 'auto' | 'manual';
   created_at?: string;
   category_id?: string | null;
@@ -43,6 +41,8 @@ export interface Order {
   payment_method: string;
   notes: string | null;
   created_at: string;
+  payment_status?: string;
+  updated_at?: string;
 }
 
 // Types pour les slides hero (structure réelle de la table)

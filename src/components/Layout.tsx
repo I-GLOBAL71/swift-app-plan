@@ -2,6 +2,9 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { SearchBar } from "./SearchBar";
 import { CategoriesBar } from "./CategoriesBar";
+import { PersistentCartDrawer } from "./PersistentCartDrawer";
+import ScrollToTop from "./ScrollToTop";
+import InstallPWAPrompt from "./InstallPWAPrompt";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -13,8 +16,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         </div>
         <CategoriesBar />
       </div>
-      <main className="flex-grow">{children}</main>
+      <main className="flex-grow pb-20">{children}</main>
       <Footer />
+      <ScrollToTop />
+      <InstallPWAPrompt />
+      <PersistentCartDrawer />
     </div>
   );
 };

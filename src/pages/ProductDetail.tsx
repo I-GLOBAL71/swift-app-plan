@@ -60,7 +60,7 @@ export function ProductDetail() {
         const { data: relations, error: relationsError } = await supabase
           .from('product_relations')
           .select('related_product_id')
-          .eq('product_id', currentProduct.id);
+          .eq('product_id', currentProduct.id) as any;
 
         if (relationsError) throw relationsError;
 
@@ -68,7 +68,7 @@ export function ProductDetail() {
         if (similarIds.length > 0) {
           const { data: products, error: productsError } = await supabase
             .from('products')
-            .select('*, slug, similar_products_type')
+            .select('*')
             .in('id', similarIds)
             .eq('is_active', true)
             .limit(4);
@@ -80,7 +80,7 @@ export function ProductDetail() {
         if (currentProduct.keywords && currentProduct.keywords.length > 0) {
           const { data, error } = await supabase
             .from('products')
-            .select('*, slug, similar_products_type')
+            .select('*')
             .overlaps('keywords', currentProduct.keywords)
             .not('id', 'eq', currentProduct.id)
             .eq('is_active', true)
@@ -120,7 +120,7 @@ export function ProductDetail() {
       try {
         await navigator.share({
           title: product?.title,
-          text: product?.description,
+          text: product?.title,
           url: window.location.href,
         });
       } catch (error) {
@@ -208,7 +208,7 @@ export function ProductDetail() {
               </p>
 
               <p className="text-muted-foreground leading-relaxed">
-                {product.description}
+                {product.title}
               </p>
             </div>
 

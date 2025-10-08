@@ -46,7 +46,7 @@ const ProductCard = ({ product, variant = 'default' }: ProductCardProps) => {
     if (justSwiped) {
       return;
     }
-    navigate(`/product/${product.slug}/${product.id}`);
+    navigate(`/product/${product.id}`);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -93,7 +93,7 @@ const ProductCard = ({ product, variant = 'default' }: ProductCardProps) => {
         )}
         <div className="flex-grow" /> {/* This spacer pushes the buttons to the bottom */}
         <div className="flex items-center gap-2 pt-2">
-          <ShareButton product={{ id: product.id, title: product.title, slug: product.slug }} size="sm" />
+          <ShareButton product={{ id: product.id, title: product.title }} size="sm" />
           <Button
             size="sm"
             onClick={handleAddToCart}

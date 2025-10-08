@@ -89,7 +89,7 @@ const SectionsManagement = () => {
       } else {
         const { error } = await supabase
           .from("sections")
-          .insert([formData]);
+          .insert([{ ...formData, type: 'custom' }]);
 
         if (error) throw error;
         toast.success("Section créée avec succès");

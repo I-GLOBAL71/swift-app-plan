@@ -68,7 +68,7 @@ export function ProductsManagement() {
       const { data, error } = await supabase.functions.invoke("enhance-product", {
         body: {
           title: product.title,
-          description: product.description,
+          description: '',
           action: 'categorize',
         },
       });
@@ -119,7 +119,7 @@ export function ProductsManagement() {
           </Button>
         </div>
         <ProductForm
-          product={editingProduct}
+          product={editingProduct as any}
           onSuccess={handleFormSuccess}
           onCancel={() => setShowForm(false)}
         />

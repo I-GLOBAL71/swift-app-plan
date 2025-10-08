@@ -17,9 +17,6 @@ export default function SocialLinksSettings() {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchSocialLinks = async () => {
       setLoading(true);

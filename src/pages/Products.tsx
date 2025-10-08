@@ -26,17 +26,9 @@ const Products = () => {
   const loadProducts = async (query: string | null, category: string | null, subcategory: string | null) => {
     setLoading(true);
     try {
-      let selectStatement = "*, category:categories(name), sub_category:sub_categories(name)";
-      // Use !inner join to filter on the related table
-      if (subcategory) {
-        selectStatement = "*, category:categories(name), sub_category:sub_categories!inner(name)";
-      } else if (category) {
-        selectStatement = "*, category:categories!inner(name), sub_category:sub_categories(name)";
-      }
-
-      let queryBuilder = supabase
+      let queryBuilder: any = supabase
         .from("products")
-        .select(selectStatement)
+        .select("*")
         .eq("is_premium", false)
         .eq("is_active", true);
 
@@ -46,13 +38,6 @@ const Products = () => {
           type: "plain",
           config: "french_unaccent",
         });
-      }
-
-      // Apply the filter on the joined table's name
-      if (subcategory) {
-        queryBuilder = queryBuilder.ilike('sub_categories.name', subcategory);
-      } else if (category) {
-        queryBuilder = queryBuilder.ilike('categories.name', category);
       }
 
       // Order by creation date to see new products first
