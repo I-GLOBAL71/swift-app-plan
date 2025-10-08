@@ -89,7 +89,6 @@ export function OrdersManagement() {
           status,
           notes,
           payment_method,
-          payment_status,
           expected_delivery_date,
           created_at,
           city_id,
@@ -117,15 +116,8 @@ export function OrdersManagement() {
   };
 
   const filterOrders = (tab: string, ordersToFilter: Order[]) => {
-    let newFilteredOrders: Order[] = [];
-    if (tab === "paid") {
-      newFilteredOrders = ordersToFilter.filter(o => o.payment_status === 'paid');
-    } else if (tab === "unpaid") {
-      newFilteredOrders = ordersToFilter.filter(o => o.payment_status !== 'paid');
-    } else {
-      newFilteredOrders = ordersToFilter;
-    }
-    setFilteredOrders(newFilteredOrders);
+    // Pour le moment, on affiche toutes les commandes car la colonne payment_status n'existe pas
+    setFilteredOrders(ordersToFilter);
   };
 
   useEffect(() => {
@@ -222,18 +214,19 @@ export function OrdersManagement() {
   };
 
   const PaymentStatusBadge = ({ status }: { status: string }) => {
-    if (status === 'paid') {
+    // Utiliser le statut de la commande comme indicateur temporaire
+    if (status === 'confirmed' || status === 'delivered') {
       return (
         <div className="flex items-center gap-1 text-green-600">
           <CheckCircle className="w-4 h-4" />
-          <span className="font-medium">Payé</span>
+          <span className="font-medium">Confirmé</span>
         </div>
       );
     }
     return (
-      <div className="flex items-center gap-1 text-red-600">
+      <div className="flex items-center gap-1 text-orange-600">
         <XCircle className="w-4 h-4" />
-        <span className="font-medium">Non Payé</span>
+        <span className="font-medium">En attente</span>
       </div>
     );
   };
@@ -252,8 +245,6 @@ export function OrdersManagement() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="all">Toutes ({allOrders.length})</TabsTrigger>
-          <TabsTrigger value="paid">Payées ({allOrders.filter(o => o.payment_status === 'paid').length})</TabsTrigger>
-          <TabsTrigger value="unpaid">Non Payées ({allOrders.filter(o => o.payment_status !== 'paid').length})</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -311,7 +302,7 @@ export function OrdersManagement() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <PaymentStatusBadge status={order.payment_status} />
+                      <PaymentStatusBadge status={order.status} />
                     </TableCell>
                     <TableCell className="font-medium">
                       {order.total_amount.toLocaleString()} FCFA

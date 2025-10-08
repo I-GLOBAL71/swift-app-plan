@@ -38,7 +38,6 @@ export interface Order {
   customer_email: string | null;
   total_amount: number;
   status: string;
-  payment_status?: string;
   city_id: string;
   expected_delivery_date: string;
   payment_method: string;
@@ -46,7 +45,7 @@ export interface Order {
   created_at: string;
 }
 
-// Types pour les slides hero
+// Types pour les slides hero (structure réelle de la table)
 export interface HeroSlide {
   id: string;
   image_url: string;

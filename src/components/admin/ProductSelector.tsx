@@ -45,12 +45,12 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({ sectionId, onClose })
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("id, title, price, image_url, is_premium, slug")
+        .select("id, title, price, image_url, is_premium")
         .eq("is_active", true)
         .order("title");
 
       if (error) throw error;
-      setProducts(data || []);
+      setProducts((data || []) as Product[]);
     } catch (error) {
       toast.error("Erreur lors du chargement des produits");
       console.error("Error loading products:", error);

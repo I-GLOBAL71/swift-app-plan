@@ -70,9 +70,9 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
       if (categoriesError) toast.error('Erreur lors du chargement des catégories');
       else setCategories(categoriesData || []);
 
-      const { data: subCategoriesData, error: subCategoriesError } = await supabase.from('sub_categories').select('id, name, category_id');
+      const { data: subCategoriesData, error: subCategoriesError } = await supabase.from('sub_categories').select('id, name, parent_id');
       if (subCategoriesError) toast.error('Erreur lors du chargement des sous-catégories');
-      else setSubCategories(subCategoriesData || []);
+      else setSubCategories((subCategoriesData || []).map(sc => ({ id: sc.id, name: sc.name, category_id: sc.parent_id })));
     };
 
     fetchCategories();
@@ -98,7 +98,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
         const fetchRelatedProducts = async () => {
             const { data, error } = await supabase
                 .from('product_relations')
-                .select('similar_product_id')
+                .select('related_product_id')
                 .eq('product_id', product.id);
 
             if (error) {
@@ -106,7 +106,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
                 return;
             }
 
-            const relatedIds = data.map(r => r.similar_product_id);
+            const relatedIds = data.map(r => r.related_product_id);
             if (relatedIds.length > 0) {
                 const { data: products, error: productsError } = await supabase
                     .from('products')

@@ -85,16 +85,15 @@ const HeroSlidesManagement = () => {
 
     try {
       let result;
-      const slideData = { ...formData };
 
       if (editingSlide) {
         result = await supabase
           .from("hero_slides")
-          .update(slideData)
+          .update(formData)
           .eq("id", editingSlide.id)
           .select();
       } else {
-        result = await supabase.from("hero_slides").insert(slideData).select();
+        result = await supabase.from("hero_slides").insert(formData).select();
       }
 
       const { data, error } = result;
@@ -129,20 +128,9 @@ const HeroSlidesManagement = () => {
     }
   };
 
-  const toggleActive = async (id: string, isActive: boolean) => {
-    try {
-      const { error } = await supabase
-        .from("hero_slides")
-        .update({ is_active: !isActive })
-        .eq("id", id);
-
-      if (error) throw error;
-      toast.success("Statut de la diapositive mis à jour");
-      loadSlides();
-    } catch (error) {
-      console.error("Error toggling slide:", error);
-      toast.error("Erreur lors de la modification");
-    }
+  const toggleActive = async (id: string) => {
+    // Cette fonctionnalité n'est pas disponible car la table n'a pas de colonne is_active
+    toast.info("La gestion de l'état actif/inactif n'est pas disponible pour le moment");
   };
 
   if (loading) {
@@ -203,18 +191,6 @@ const HeroSlidesManagement = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description *</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="Description complète de la diapositive..."
-                  rows={3}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="image_url">URL de l'image *</Label>
                 <div className="flex gap-2">
                   <Image className="w-5 h-5 mt-2 text-muted-foreground" />
@@ -228,52 +204,17 @@ const HeroSlidesManagement = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="button_text">Texte du Bouton *</Label>
+              <div className="space-y-2">
+                <Label htmlFor="link">Lien *</Label>
+                <div className="flex gap-2">
+                  <Link className="w-5 h-5 mt-2 text-muted-foreground" />
                   <Input
-                    id="button_text"
-                    value={formData.button_text}
-                    onChange={(e) => setFormData({...formData, button_text: e.target.value})}
-                    placeholder="ex: Découvrir nos produits"
+                    id="link"
+                    value={formData.link}
+                    onChange={(e) => setFormData({...formData, link: e.target.value})}
+                    placeholder="#products ou /premium ou https://..."
                     required
                   />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="button_link">Lien du Bouton *</Label>
-                  <div className="flex gap-2">
-                    <Link className="w-5 h-5 mt-2 text-muted-foreground" />
-                    <Input
-                      id="button_link"
-                      value={formData.button_link}
-                      onChange={(e) => setFormData({...formData, button_link: e.target.value})}
-                      placeholder="#products ou /premium ou https://..."
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="order_index">Ordre d'affichage</Label>
-                  <Input
-                    id="order_index"
-                    type="number"
-                    min="0"
-                    value={formData.order_index}
-                    onChange={(e) => setFormData({...formData, order_index: parseInt(e.target.value)})}
-                  />
-                </div>
-                
-                <div className="flex items-center space-x-2 pt-6">
-                  <Switch
-                    id="is_active"
-                    checked={formData.is_active}
-                    onCheckedChange={(checked) => setFormData({...formData, is_active: checked})}
-                  />
-                  <Label htmlFor="is_active">Diapositive active</Label>
                 </div>
               </div>
 
@@ -300,34 +241,17 @@ const HeroSlidesManagement = () => {
       ) : (
         <div className="grid gap-4">
           {slides.map((slide) => (
-            <Card key={slide.id} className={`transition-opacity ${!slide.is_active ? 'opacity-60' : ''}`}>
+            <Card key={slide.id} className="transition-opacity">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <GripVertical className="w-5 h-5 text-muted-foreground cursor-move" />
                     <div>
                       <CardTitle className="text-lg">{slide.title} - {slide.subtitle}</CardTitle>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant={slide.is_active ? "default" : "secondary"}>
-                          {slide.is_active ? (
-                            <><Eye className="w-3 h-3 mr-1" /> Active</>
-                          ) : (
-                            <><EyeOff className="w-3 h-3 mr-1" /> Inactive</>
-                          )}
-                        </Badge>
-                        <Badge variant="outline">Ordre: {slide.order_index}</Badge>
-                      </div>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleActive(slide.id, slide.is_active)}
-                    >
-                      {slide.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -349,12 +273,8 @@ const HeroSlidesManagement = () => {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-2 space-y-2">
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {slide.description}
-                    </p>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>Bouton: "{slide.button_text}"</span>
-                      <span>→ {slide.button_link}</span>
+                      <span>Lien: {slide.link}</span>
                     </div>
                   </div>
                   
