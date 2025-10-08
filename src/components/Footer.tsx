@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Phone, Mail, MapPin, Facebook, Instagram, Twitter as XIcon, LucideProps } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { SocialLink } from "@/lib/types";
 
 // A simple component for the TikTok icon
 const TikTokIcon = (props: LucideProps) => (
@@ -43,11 +44,6 @@ type FooterData = {
   };
 };
 
-type SocialLink = {
-  id: number;
-  name: string;
-  url: string;
-};
 
 const Footer = () => {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
@@ -77,7 +73,7 @@ const Footer = () => {
 
       if (supportResult.error) {
         console.error("Error fetching support contact:", supportResult.error);
-      } else if (supportResult.data) {
+      } else if (supportResult.data && typeof supportResult.data.content === 'object') {
         supportContact = supportResult.data.content as { email: string; phone: string };
       }
 
@@ -89,13 +85,17 @@ const Footer = () => {
     const fetchSocialLinks = async () => {
       const { data, error } = await supabase
         .from('social_links')
-        .select('id, name, url')
+        .select('id, platform, url')
         .not('url', 'is', null);
 
       if (error) {
         console.error("Error fetching social links:", error);
       } else {
-        setSocialLinks(data || []);
+        setSocialLinks((data || []).map(link => ({
+          id: link.id,
+          platform: link.platform,
+          url: link.url
+        })) as SocialLink[]);
       }
     };
 
@@ -117,10 +117,10 @@ const Footer = () => {
             </p>
             <div className="flex space-x-4 justify-center md:justify-start">
               {socialLinks.map(link => {
-                const Icon = socialIconMap[link.name];
+                const Icon = socialIconMap[link.platform];
                 if (!Icon || !link.url) return null;
                 return (
-                  <a href={link.url} key={link.id} target="_blank" rel="noopener noreferrer" aria-label={link.name}>
+                  <a href={link.url} key={link.id} target="_blank" rel="noopener noreferrer" aria-label={link.platform}>
                     <Button variant="ghost" size="icon" className="text-background hover:bg-background/10">
                       <Icon className="w-5 h-5" />
                     </Button>

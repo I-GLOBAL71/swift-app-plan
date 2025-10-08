@@ -5,17 +5,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-
-interface Category {
-  id: string;
-  name: string;
-}
-
-interface SubCategory {
-  id: string;
-  name: string;
-  category_id: string;
-}
+import { Category, SubCategory } from "@/lib/types";
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -24,10 +14,14 @@ const Header = () => {
 
   useEffect(() => {
     const fetchCategories = async () => {
-      const { data: catData } = await supabase.from('categories').select('id, name').order('name');
-      setCategories(catData || []);
-      const { data: subCatData } = await supabase.from('sub_categories').select('id, name, category_id').order('name');
-      setSubCategories(subCatData || []);
+      const { data: catData } = await supabase.from('categories').select('id, name, parent_id').order('name');
+      setCategories((catData || []) as Category[]);
+      const { data: subCatData } = await supabase.from('sub_categories').select('id, name, parent_id').order('name');
+      setSubCategories((subCatData || []).map(sc => ({
+        id: sc.id,
+        name: sc.name,
+        parent_id: sc.parent_id
+      })) as SubCategory[]);
     };
     fetchCategories();
   }, []);
@@ -99,7 +93,7 @@ const Header = () => {
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="flex flex-col pl-4">
-                        {subCategories.filter(sc => sc.category_id === category.id).map(subCategory => (
+                        {subCategories.filter(sc => sc.parent_id === category.id).map(subCategory => (
                           <Link to={`/products?category=${category.name.toLowerCase()}&subcategory=${subCategory.name.toLowerCase()}`} key={subCategory.id} className="w-full">
                             <Button
                               variant="ghost"

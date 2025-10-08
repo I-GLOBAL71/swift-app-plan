@@ -17,19 +17,7 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
-
-interface HeroSlide {
-  id: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  image_url: string;
-  button_text: string;
-  button_link: string;
-  is_active: boolean;
-  order_index: number;
-  created_at: string;
-}
+import { HeroSlide } from "@/lib/types";
 
 const HeroSlidesManagement = () => {
   const [slides, setSlides] = useState<HeroSlide[]>([]);
@@ -39,12 +27,9 @@ const HeroSlidesManagement = () => {
   const [formData, setFormData] = useState({
     title: "",
     subtitle: "",
-    description: "",
     image_url: "",
-    button_text: "",
-    button_link: "",
-    is_active: true,
-    order_index: 0
+    link: "",
+    created_at: ""
   });
 
   useEffect(() => {
@@ -72,12 +57,9 @@ const HeroSlidesManagement = () => {
     setFormData({
       title: "",
       subtitle: "",
-      description: "",
       image_url: "",
-      button_text: "",
-      button_link: "",
-      is_active: true,
-      order_index: slides.length
+      link: "",
+      created_at: ""
     });
     setEditingSlide(null);
   };
@@ -88,12 +70,9 @@ const HeroSlidesManagement = () => {
       setFormData({
         title: slide.title,
         subtitle: slide.subtitle,
-        description: slide.description,
         image_url: slide.image_url,
-        button_text: slide.button_text,
-        button_link: slide.button_link,
-        is_active: slide.is_active,
-        order_index: slide.order_index
+        link: slide.link,
+        created_at: slide.created_at
       });
     } else {
       resetForm();

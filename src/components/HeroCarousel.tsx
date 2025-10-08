@@ -3,19 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Star, ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-
-interface HeroSlide {
-  id: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  image_url: string;
-  button_text: string;
-  button_link: string;
-  is_active: boolean;
-  order_index: number;
-  created_at: string;
-}
+import { HeroSlide } from "@/lib/types";
 
 const HeroCarousel = () => {
   const [slides, setSlides] = useState<HeroSlide[]>([]);
@@ -43,11 +31,10 @@ const HeroCarousel = () => {
       const { data, error } = await supabase
         .from("hero_slides")
         .select("*")
-        .eq("is_active", true)
-        .order("order_index", { ascending: true });
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setSlides(data || []);
+      setSlides((data || []) as HeroSlide[]);
     } catch (error) {
       console.error("Error loading hero slides:", error);
     } finally {
@@ -165,7 +152,7 @@ const HeroCarousel = () => {
             className="text-lg sm:text-xl text-muted-foreground mb-8 leading-relaxed animate-fade-in"
             style={{ animationDelay: '0.2s' }}
           >
-            {currentSlideData.description}
+            Découvrez nos produits de qualité
           </p>
           
           <div
@@ -176,9 +163,9 @@ const HeroCarousel = () => {
               variant="cta"
               size="lg"
               className="group w-full sm:w-auto"
-              onClick={() => handleButtonClick(currentSlideData.button_link)}
+              onClick={() => handleButtonClick(currentSlideData.link)}
             >
-              {currentSlideData.button_text}
+              Découvrir
               <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
             </Button>
             <Button variant="outline" className="w-full sm:w-auto" onClick={() => navigate('/how-it-works')}>

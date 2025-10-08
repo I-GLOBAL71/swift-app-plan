@@ -8,12 +8,11 @@ import { useCart } from "@/contexts/CartContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useRef } from "react";
-
-import { Tables } from "@/integrations/supabase/types";
+import { Product } from "@/lib/types";
 import { toImagesArray } from "@/lib/utils";
 
 interface ProductCardProps {
-  product: Tables<"products">;
+  product: Product;
   variant?: 'hero' | 'default';
 }
 

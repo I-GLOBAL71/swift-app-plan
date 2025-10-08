@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../integrations/supabase/client';
-import { Tables } from '../integrations/supabase/types';
+import { Product } from '@/lib/types';
 import { Skeleton } from './ui/skeleton';
 import { useSettings } from '@/contexts/SettingsContext';
 import ProductCard from './ProductCard';
 
-type HeroProduct = Tables<'products'>;
-
 const HeroProductGrid = () => {
   const { heroGridRows, heroGridCols, heroGridAlternatesPremiumProducts } = useSettings();
-  const [allProducts, setAllProducts] = useState<HeroProduct[]>([]);
-  const [visibleProducts, setVisibleProducts] = useState<HeroProduct[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [visibleProducts, setVisibleProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,7 +20,7 @@ const HeroProductGrid = () => {
       setError(null);
 
       try {
-        let finalProducts: HeroProduct[] = [];
+        let finalProducts: Product[] = [];
 
         if (heroGridAlternatesPremiumProducts) {
           const [standardProductsRes, premiumProductsRes] = await Promise.all([

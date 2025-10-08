@@ -10,22 +10,7 @@ import { Plus, Edit, Trash2, Sparkles, Download, Package, RefreshCw } from "luci
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  image_url: any;
-  is_premium: boolean;
-  keywords: string[];
-  synonyms: string[];
-  is_active: boolean;
-  slug: string;
-  similar_products_type: 'auto' | 'manual';
-  created_at: string;
-  category_id?: string | null;
-  sub_category_id?: string | null;
-}
+import { Product } from "@/lib/types";
 
 export function ProductsManagement() {
   const [products, setProducts] = useState<Product[]>([]);

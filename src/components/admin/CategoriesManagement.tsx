@@ -6,17 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface Category {
-  id: string;
-  name: string;
-}
-
-interface SubCategory {
-  id: string;
-  name: string;
-  category_id: string;
-}
+import { Category, SubCategory } from '@/lib/types';
 
 export function CategoriesManagement() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -41,7 +31,11 @@ export function CategoriesManagement() {
 
       const { data: subCatData, error: subCatError } = await supabase.from('sub_categories').select('*').order('name');
       if (subCatError) throw subCatError;
-      setSubCategories(subCatData || []);
+      setSubCategories((subCatData || []).map(sc => ({
+        id: sc.id,
+        name: sc.name,
+        parent_id: sc.parent_id
+      })) as SubCategory[]);
     } catch (error) {
       toast.error('Erreur lors du chargement des données.');
     } finally {
@@ -65,9 +59,13 @@ export function CategoriesManagement() {
   const handleAddSubCategory = async () => {
     if (!newSubCategoryName.trim() || !selectedCategoryId) return;
     try {
-      const { data, error } = await supabase.from('sub_categories').insert({ name: newSubCategoryName, category_id: selectedCategoryId }).select().single();
+      const { data, error } = await supabase.from('sub_categories').insert({ name: newSubCategoryName, parent_id: selectedCategoryId }).select().single();
       if (error) throw error;
-      setSubCategories([...subCategories, data]);
+      setSubCategories([...subCategories, {
+        id: data.id,
+        name: data.name,
+        parent_id: data.parent_id
+      } as SubCategory]);
       setNewSubCategoryName('');
       toast.success('Sous-catégorie ajoutée.');
     } catch (error) {
@@ -117,7 +115,11 @@ export function CategoriesManagement() {
     try {
       const { data, error } = await supabase.from('sub_categories').update({ name: editingSubCategory.name }).eq('id', editingSubCategory.id).select().single();
       if (error) throw error;
-      setSubCategories(subCategories.map(sc => sc.id === data.id ? data : sc));
+      setSubCategories(subCategories.map(sc => sc.id === data.id ? ({
+        id: data.id,
+        name: data.name,
+        parent_id: data.parent_id
+      } as SubCategory) : sc));
       setEditingSubCategory(null);
       toast.success('Sous-catégorie mise à jour.');
     } catch (error) {
@@ -199,7 +201,7 @@ export function CategoriesManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {subCategories.filter(sc => sc.category_id === selectedCategoryId).map(subCat => (
+                  {subCategories.filter(sc => sc.parent_id === selectedCategoryId).map(subCat => (
                     <TableRow key={subCat.id}>
                       <TableCell>
                         {editingSubCategory?.id === subCat.id ? (
