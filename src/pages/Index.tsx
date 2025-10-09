@@ -16,12 +16,12 @@ const Index = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const result: any = await supabase
+        const result: any = await (((supabase as any)
           .from("products")
           .select("*")
           .eq("is_premium", false)
           .eq("is_active", true)
-          .limit(8);
+          .limit(8)) as any);
         
         const { data, error } = result;
 

@@ -26,11 +26,11 @@ const Products = () => {
   const loadProducts = async (query: string | null, category: string | null, subcategory: string | null) => {
     setLoading(true);
     try {
-      let queryBuilder: any = supabase
+      let queryBuilder = (((supabase as any)
         .from("products")
         .select("*")
         .eq("is_premium", false)
-        .eq("is_active", true);
+        .eq("is_active", true)) as any);
 
       if (query) {
         const plainQuery = query.split(/\s+/).join(" & ");
